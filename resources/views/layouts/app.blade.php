@@ -27,7 +27,27 @@
             }
         </style>
     </head>
-    <body class="mobile-no-zoom font-sans antialiased" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+    <body class="enable-page-skeleton page-loading mobile-no-zoom font-sans antialiased" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+        <div class="customer-page-skeleton" aria-hidden="true">
+            <div class="min-h-screen bg-[#f6faff]">
+                <div class="border-b border-[#d7dde8] bg-white px-4 py-4">
+                    <div class="mx-auto flex max-w-7xl items-center justify-between">
+                        <div class="skeleton-shimmer h-10 w-36 rounded-2xl"></div>
+                        <div class="flex gap-3">
+                            <div class="skeleton-shimmer h-10 w-10 rounded-full"></div>
+                            <div class="skeleton-shimmer h-10 w-10 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+                    <div class="skeleton-shimmer h-24 rounded-3xl"></div>
+                    <div class="grid gap-6 lg:grid-cols-3">
+                        <div class="skeleton-shimmer h-64 rounded-3xl lg:col-span-2"></div>
+                        <div class="skeleton-shimmer h-64 rounded-3xl"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="min-h-screen bg-[#f6faff]">
             @include('layouts.navigation')
 

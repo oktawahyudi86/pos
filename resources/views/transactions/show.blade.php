@@ -48,7 +48,7 @@
         }
     </style>
 </head>
-<body class="mobile-no-zoom w-full max-w-full overflow-x-hidden bg-[#f6faff] text-[#171c20]" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+<body class="enable-page-skeleton page-loading mobile-no-zoom w-full max-w-full overflow-x-hidden bg-[#f6faff] text-[#171c20]" style="font-family: 'Plus Jakarta Sans', sans-serif;">
     <aside class="pos-sidebar no-print fixed left-0 top-0 z-50 hidden h-screen w-64 flex-col gap-2 border-r border-[#c6c5d2] bg-[#f6faff] p-4 transition-all duration-300 md:flex">
         <div class="mb-8 flex items-center">
             <a href="{{ route('dashboard') }}" class="sidebar-brand flex min-w-0 items-center gap-3 rounded-xl px-4 py-2">

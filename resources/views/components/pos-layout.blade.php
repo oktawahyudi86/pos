@@ -62,7 +62,69 @@
         }
     </style>
 </head>
-<body class="mobile-no-zoom bg-[#f6faff] text-[#171c20]" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+<body class="enable-page-skeleton page-loading mobile-no-zoom bg-[#f6faff] text-[#171c20]" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+    <div class="customer-page-skeleton" aria-hidden="true">
+        <div class="hidden h-full md:flex">
+            <div class="w-64 shrink-0 border-r border-[#d7dde8] bg-[#f6faff] p-4">
+                <div class="skeleton-shimmer mb-8 h-14 rounded-2xl"></div>
+                <div class="space-y-3">
+                    <div class="skeleton-shimmer h-12 rounded-xl"></div>
+                    <div class="skeleton-shimmer h-12 rounded-xl"></div>
+                    <div class="skeleton-shimmer h-12 rounded-xl"></div>
+                    <div class="skeleton-shimmer h-12 rounded-xl"></div>
+                </div>
+                <div class="mt-10 rounded-2xl bg-[#eaeef4] p-4">
+                    <div class="skeleton-shimmer h-12 rounded-xl"></div>
+                    <div class="skeleton-shimmer mt-4 h-10 rounded-xl"></div>
+                </div>
+            </div>
+            <div class="flex min-w-0 flex-1 flex-col">
+                <div class="flex h-16 items-center justify-between border-b border-[#d7dde8] bg-[#f6faff] px-6">
+                    <div class="flex items-center gap-4">
+                        <div class="skeleton-shimmer h-11 w-11 rounded-full"></div>
+                        <div class="space-y-2">
+                            <div class="skeleton-shimmer h-4 w-40 rounded-full"></div>
+                            <div class="skeleton-shimmer h-3 w-64 rounded-full"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="skeleton-shimmer h-10 w-10 rounded-full"></div>
+                        <div class="skeleton-shimmer h-10 w-10 rounded-full"></div>
+                    </div>
+                </div>
+                <div class="space-y-6 p-6">
+                    <div class="grid gap-4 md:grid-cols-3">
+                        <div class="skeleton-shimmer h-28 rounded-2xl"></div>
+                        <div class="skeleton-shimmer h-28 rounded-2xl"></div>
+                        <div class="skeleton-shimmer h-28 rounded-2xl"></div>
+                    </div>
+                    <div class="skeleton-shimmer h-16 rounded-2xl"></div>
+                    <div class="skeleton-shimmer h-72 rounded-3xl"></div>
+                </div>
+            </div>
+        </div>
+        <div class="md:hidden">
+            <div class="flex h-16 items-center justify-between border-b border-[#d7dde8] bg-[#f6faff] px-4">
+                <div class="skeleton-shimmer h-7 w-24 rounded-full"></div>
+                <div class="flex gap-3">
+                    <div class="skeleton-shimmer h-10 w-10 rounded-full"></div>
+                    <div class="skeleton-shimmer h-10 w-10 rounded-full"></div>
+                </div>
+            </div>
+            <div class="space-y-4 px-4 py-5">
+                <div class="skeleton-shimmer h-28 rounded-2xl"></div>
+                <div class="skeleton-shimmer h-52 rounded-3xl"></div>
+                <div class="skeleton-shimmer h-52 rounded-3xl"></div>
+            </div>
+            <div class="fixed inset-x-0 bottom-0 border-t border-[#d7dde8] bg-white px-2 py-2">
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="skeleton-shimmer h-16 rounded-xl"></div>
+                    <div class="skeleton-shimmer h-16 rounded-xl"></div>
+                    <div class="skeleton-shimmer h-16 rounded-xl"></div>
+                </div>
+            </div>
+        </div>
+    </div>
     <aside class="pos-sidebar fixed left-0 top-0 z-50 hidden h-screen w-64 flex-col gap-2 border-r border-[#c6c5d2] bg-[#f6faff] p-4 transition-all duration-300 md:flex">
         <div class="mb-8 flex items-center">
             <a href="{{ route('dashboard') }}" class="sidebar-brand flex min-w-0 items-center gap-3 rounded-xl px-4 py-2">

@@ -27,7 +27,45 @@
             }
         </style>
     </head>
-    <body class="mobile-no-zoom text-gray-900 antialiased">
+    <body class="enable-page-skeleton page-loading mobile-no-zoom text-gray-900 antialiased">
+        <div class="customer-page-skeleton" aria-hidden="true">
+            <div class="hidden min-h-screen md:flex">
+                <div class="flex w-[60%] flex-col justify-between bg-[#eef2f8] p-8">
+                    <div class="skeleton-shimmer h-14 w-44 rounded-2xl"></div>
+                    <div class="space-y-4">
+                        <div class="skeleton-shimmer h-8 w-32 rounded-full"></div>
+                        <div class="skeleton-shimmer h-14 w-3/4 rounded-2xl"></div>
+                        <div class="skeleton-shimmer h-5 w-2/3 rounded-full"></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="skeleton-shimmer h-36 rounded-3xl"></div>
+                        <div class="skeleton-shimmer h-36 rounded-3xl"></div>
+                        <div class="skeleton-shimmer h-36 rounded-3xl"></div>
+                    </div>
+                </div>
+                <div class="flex w-[40%] items-center justify-center bg-white p-8">
+                    <div class="w-full max-w-md rounded-3xl bg-white p-8 shadow-[0_4px_12px_rgba(27,43,107,0.08)]">
+                        <div class="skeleton-shimmer mb-8 h-8 w-28 rounded-full"></div>
+                        <div class="space-y-5">
+                            <div class="skeleton-shimmer h-14 rounded-xl"></div>
+                            <div class="skeleton-shimmer h-14 rounded-xl"></div>
+                            <div class="skeleton-shimmer h-12 rounded-xl"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="min-h-screen bg-white p-4 md:hidden">
+                <div class="mx-auto max-w-md space-y-5 rounded-3xl bg-white pt-6">
+                    <div class="skeleton-shimmer h-12 w-36 rounded-2xl"></div>
+                    <div class="skeleton-shimmer h-8 w-28 rounded-full"></div>
+                    <div class="space-y-4">
+                        <div class="skeleton-shimmer h-14 rounded-xl"></div>
+                        <div class="skeleton-shimmer h-14 rounded-xl"></div>
+                        <div class="skeleton-shimmer h-12 rounded-xl"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
         {{ $slot }}
     </body>
 </html>

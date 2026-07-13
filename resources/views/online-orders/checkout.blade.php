@@ -149,6 +149,10 @@
                         <div class="overflow-hidden rounded-xl bg-white shadow-sm">
                             <img src="{{ $qrisImageUrl }}" alt="QRIS {{ $paymentInfo['qris_merchant_name'] ?? '' }}" class="block w-full h-auto">
                         </div>
+                        <a href="{{ $qrisImageUrl }}" download="qris-{{ $tenant->slug }}.jpg" class="mt-2 inline-flex items-center gap-1 rounded-full border border-[#c6c5d2] bg-white px-3 py-1.5 text-[11px] font-bold text-[#454650] active:scale-[0.98]">
+                            <span class="material-symbols-outlined text-[16px]">download</span>
+                            Unduh QRIS
+                        </a>
                     @else
                         <div class="mx-auto flex h-28 w-28 items-center justify-center rounded-2xl bg-white text-[#001356] shadow-sm">
                             <span class="material-symbols-outlined text-[72px]">qr_code_2</span>

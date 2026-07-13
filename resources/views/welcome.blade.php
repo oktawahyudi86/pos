@@ -1862,7 +1862,38 @@
         }
     </style>
 </head>
-<body>
+<body class="enable-page-skeleton page-loading">
+    <div class="customer-page-skeleton" aria-hidden="true">
+        <div class="bg-white">
+            <div class="flex items-center justify-between px-5 py-4">
+                <div class="skeleton-shimmer h-11 w-36 rounded-2xl"></div>
+                <div class="hidden gap-3 md:flex">
+                    <div class="skeleton-shimmer h-10 w-24 rounded-full"></div>
+                    <div class="skeleton-shimmer h-10 w-24 rounded-full"></div>
+                    <div class="skeleton-shimmer h-10 w-28 rounded-full"></div>
+                </div>
+            </div>
+            <div class="mx-auto max-w-6xl space-y-8 px-5 py-6">
+                <div class="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+                    <div class="space-y-4">
+                        <div class="skeleton-shimmer h-8 w-40 rounded-full"></div>
+                        <div class="skeleton-shimmer h-16 w-full rounded-3xl"></div>
+                        <div class="skeleton-shimmer h-5 w-4/5 rounded-full"></div>
+                        <div class="flex gap-3">
+                            <div class="skeleton-shimmer h-12 w-36 rounded-full"></div>
+                            <div class="skeleton-shimmer h-12 w-32 rounded-full"></div>
+                        </div>
+                    </div>
+                    <div class="skeleton-shimmer h-80 rounded-[32px]"></div>
+                </div>
+                <div class="grid gap-4 md:grid-cols-3">
+                    <div class="skeleton-shimmer h-40 rounded-3xl"></div>
+                    <div class="skeleton-shimmer h-40 rounded-3xl"></div>
+                    <div class="skeleton-shimmer h-40 rounded-3xl"></div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="page-shell">
         <header class="hero-nav">
             <div class="site-container nav-inner">

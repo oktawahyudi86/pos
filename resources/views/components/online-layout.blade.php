@@ -47,12 +47,53 @@
         .mobile-no-zoom select {
             font-size: 16px !important;
         }
+        .online-header-scrolled {
+            border-bottom-color: rgba(215, 221, 232, 0.18);
+            background: rgba(0, 19, 86, 0.84);
+            box-shadow: 0 8px 24px rgba(0, 19, 86, 0.18);
+        }
+        .online-header-scrolled .online-header-foreground {
+            color: #ffffff;
+        }
+        .online-header-scrolled .online-header-brand {
+            color: #ffffff;
+        }
     </style>
 </head>
-<body class="mobile-no-zoom overflow-x-hidden bg-[#eef3fb] text-[#171c20]" style="font-family: 'Plus Jakarta Sans', sans-serif;">
-    <header class="fixed inset-x-0 top-0 z-50 border-b border-[#d7dde8] bg-white/98 shadow-[0_4px_12px_rgba(27,43,107,0.04)] backdrop-blur">
+<body class="page-loading mobile-no-zoom overflow-x-hidden bg-[#eef3fb] text-[#171c20]" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+    <div class="customer-page-skeleton" aria-hidden="true">
+        <div class="mx-auto flex h-full w-full max-w-5xl flex-col px-4 pb-32 pt-0 sm:px-6">
+            <div class="flex h-20 items-center justify-between">
+                <div class="skeleton-shimmer h-11 w-11 rounded-full"></div>
+                <div class="flex items-center gap-2">
+                    <div class="skeleton-shimmer h-9 w-9 rounded-lg"></div>
+                    <div class="skeleton-shimmer h-4 w-28 rounded-full"></div>
+                </div>
+                <div class="skeleton-shimmer h-11 w-11 rounded-full"></div>
+            </div>
+            <div class="mt-4 space-y-4">
+                <div class="skeleton-shimmer h-32 rounded-[28px]"></div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="skeleton-shimmer h-64 rounded-[28px]"></div>
+                    <div class="skeleton-shimmer h-64 rounded-[28px]"></div>
+                    <div class="skeleton-shimmer h-64 rounded-[28px]"></div>
+                    <div class="skeleton-shimmer h-64 rounded-[28px]"></div>
+                </div>
+            </div>
+        </div>
+        <div class="fixed inset-x-0 bottom-0 border-t border-[#d7dde8] bg-white px-2 py-1 sm:px-4">
+            <div class="mx-auto grid w-full max-w-5xl grid-cols-3 gap-2">
+                <div class="skeleton-shimmer h-16 rounded-xl"></div>
+                <div class="skeleton-shimmer h-16 rounded-xl"></div>
+                <div class="skeleton-shimmer h-16 rounded-xl"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="customer-page-content">
+    <header id="online-page-header" class="fixed inset-x-0 top-0 z-50 border-b border-[#d7dde8] bg-white/98 shadow-[0_4px_12px_rgba(27,43,107,0.04)] backdrop-blur transition-all duration-200">
         <div class="mx-auto flex h-20 w-full max-w-5xl items-center justify-between px-4 sm:px-6">
-            <a href="{{ route('online-orders.catalog', $tenant) }}" class="flex h-11 w-11 items-center justify-center rounded-full text-[#001356]">
+            <a href="{{ route('online-orders.catalog', $tenant) }}" class="online-header-foreground flex h-11 w-11 items-center justify-center rounded-full text-[#001356] transition-colors duration-200">
                 <span class="material-symbols-outlined text-[30px]">restaurant_menu</span>
             </a>
 
@@ -63,11 +104,11 @@
                     <img src="{{ asset('images/keijora-logo-cropped.png') }}" alt="Keijora" class="h-9 w-auto object-contain">
                 @endif
                 @if ($customerBrandText !== '')
-                    <span class="truncate text-sm font-extrabold leading-none text-[#001356]">{{ $customerBrandText }}</span>
+                    <span class="online-header-brand truncate text-sm font-extrabold leading-none text-[#001356] transition-colors duration-200">{{ $customerBrandText }}</span>
                 @endif
             </div>
 
-            <a href="{{ route('online-orders.checkout.form', $tenant) }}" class="relative flex h-11 w-11 items-center justify-center rounded-full text-[#001356]">
+            <a href="{{ route('online-orders.checkout.form', $tenant) }}" class="online-header-foreground relative flex h-11 w-11 items-center justify-center rounded-full text-[#001356] transition-colors duration-200">
                 <svg viewBox="0 0 24 24" class="h-8 w-8" aria-hidden="true">
                     <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12l-1 13H7L6 7zm3 0a3 3 0 0 1 6 0"></path>
                 </svg>
@@ -98,5 +139,18 @@
             </a>
         </div>
     </nav>
+    <script>
+        const onlinePageHeader = document.getElementById('online-page-header');
+
+        function syncOnlineHeaderState() {
+            if (!onlinePageHeader) return;
+
+            onlinePageHeader.classList.toggle('online-header-scrolled', window.scrollY > 12);
+        }
+
+        window.addEventListener('scroll', syncOnlineHeaderState, { passive: true });
+        syncOnlineHeaderState();
+    </script>
+    </div>
 </body>
 </html>

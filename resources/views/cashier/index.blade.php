@@ -127,7 +127,7 @@ $navItems = [
         }
     </style>
 </head>
-<body class="mobile-no-zoom w-full max-w-full overflow-x-hidden bg-[#f6faff] text-[#171c20]" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+<body class="enable-page-skeleton page-loading mobile-no-zoom w-full max-w-full overflow-x-hidden bg-[#f6faff] text-[#171c20]" style="font-family: 'Plus Jakarta Sans', sans-serif;">
     <div class="cashier-safe-height flex w-full max-w-full overflow-x-hidden">
         <aside class="cashier-sidebar fixed left-0 top-0 z-50 hidden h-screen w-64 flex-col gap-2 border-r border-[#c6c5d2] bg-[#f6faff] p-4 transition-all duration-300 lg:flex">
             <div class="sidebar-header mb-8 flex items-center">

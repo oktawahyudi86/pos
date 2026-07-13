@@ -8,6 +8,7 @@ export function createMapThumbnail(wrapper, { canvas, onClick } = {}) {
     const mapContainer = canvas ?? wrapper;
     let map = null;
     let marker = null;
+    let suppressed = false;
 
     const pinIcon = L.divIcon({
         className: 'map-thumbnail-pin',
@@ -40,7 +41,7 @@ export function createMapThumbnail(wrapper, { canvas, onClick } = {}) {
     }
 
     function update(latitude, longitude) {
-        if (!wrapper) {
+        if (!wrapper || suppressed) {
             return;
         }
 
@@ -69,7 +70,19 @@ export function createMapThumbnail(wrapper, { canvas, onClick } = {}) {
     }
 
     function hide() {
+        suppressed = true;
         wrapper?.classList.add('hidden');
+    }
+
+    function show(latitude, longitude) {
+        suppressed = false;
+
+        if (latitude && longitude) {
+            update(latitude, longitude);
+            return;
+        }
+
+        wrapper?.classList.remove('hidden');
     }
 
     if (onClick && wrapper) {
@@ -89,5 +102,6 @@ export function createMapThumbnail(wrapper, { canvas, onClick } = {}) {
     return {
         update,
         hide,
+        show,
     };
 }

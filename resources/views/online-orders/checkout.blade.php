@@ -212,7 +212,7 @@
         </form>
     </section>
 
-    <div id="map-picker-modal" class="fixed inset-0 z-[120] hidden bg-white">
+    <div id="map-picker-modal" class="fixed inset-0 z-[1000] hidden bg-white">
         <div class="flex h-full flex-col">
             <div class="flex items-center gap-3 border-b border-[#dfe3e9] bg-white px-4 py-3">
                 <button id="map-close-button" type="button" class="flex h-10 w-10 items-center justify-center rounded-full text-[#001356] active:scale-[0.98]" aria-label="Tutup peta">

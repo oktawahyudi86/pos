@@ -17,6 +17,8 @@ export function createMapPicker({
     confirmButton,
     closeButtons = [],
     onLocationChange,
+    onOpen = null,
+    onClose = null,
     initialPosition = null,
 }) {
     let map = null;
@@ -109,6 +111,7 @@ export function createMapPicker({
         isOpen = true;
         modal.classList.remove('hidden');
         document.body.classList.add('overflow-hidden');
+        onOpen?.();
 
         const latitude = position ? Number(position.latitude) : DEFAULT_CENTER.latitude;
         const longitude = position ? Number(position.longitude) : DEFAULT_CENTER.longitude;
@@ -129,17 +132,18 @@ export function createMapPicker({
         modal.classList.add('hidden');
         document.body.classList.remove('overflow-hidden');
         placeSearch?.close();
+        onClose?.();
     }
 
     closeButtons.forEach((button) => {
         button?.addEventListener('click', close);
     });
 
-    confirmButton?.addEventListener('click', () => {
+    confirmButton?.addEventListener('click', async () => {
         const coordinates = getCenterCoordinates();
 
         if (coordinates) {
-            onLocationChange?.({
+            await onLocationChange?.({
                 ...coordinates,
                 confirmed: true,
             });

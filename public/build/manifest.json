@@ -12,7 +12,7 @@
     "src": "node_modules/leaflet/dist/images/marker-icon.png"
   },
   "resources/css/app.css": {
-    "file": "assets/app-CP7tCZjG.css",
+    "file": "assets/app-4AFctrGq.css",
     "name": "app",
     "names": [
       "app.css"
@@ -27,7 +27,7 @@
     "isEntry": true
   },
   "resources/js/online-checkout.js": {
-    "file": "assets/online-checkout-BUriJaqk.js",
+    "file": "assets/online-checkout-DSdqWgI2.js",
     "name": "online-checkout",
     "src": "resources/js/online-checkout.js",
     "isEntry": true,

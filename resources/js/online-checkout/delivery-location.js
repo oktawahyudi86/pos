@@ -78,7 +78,7 @@ export function initDeliveryLocation(config) {
         elements.postalCodeInput.value = components.postalCode ?? components.postal_code ?? '';
     }
 
-    function updateCoordinates(latitude, longitude, placeId = null) {
+    function updateCoordinates(latitude, longitude, placeId = null, { refreshThumbnail = true } = {}) {
         elements.latitudeInput.value = Number(latitude).toFixed(7);
         elements.longitudeInput.value = Number(longitude).toFixed(7);
 
@@ -86,7 +86,9 @@ export function initDeliveryLocation(config) {
             elements.placeIdInput.value = placeId ?? '';
         }
 
-        mapThumbnail?.update(latitude, longitude);
+        if (refreshThumbnail) {
+            mapThumbnail?.update(latitude, longitude);
+        }
     }
 
     function applyFormattedAddress(address) {
@@ -167,8 +169,9 @@ export function initDeliveryLocation(config) {
         placeId = null,
         formattedAddress = null,
         skipReverseGeocode = false,
+        refreshThumbnail = true,
     } = {}) {
-        updateCoordinates(latitude, longitude, placeId);
+        updateCoordinates(latitude, longitude, placeId, { refreshThumbnail });
         showSelectedState();
         setAddressLoading(true);
 
@@ -257,6 +260,15 @@ export function initDeliveryLocation(config) {
         searchResultsContainer: elements.mapSearchResults,
         confirmButton: elements.mapConfirmButton,
         closeButtons: elements.mapCloseButtons,
+        onOpen: () => {
+            mapThumbnail?.hide();
+        },
+        onClose: () => {
+            mapThumbnail?.show(
+                elements.latitudeInput.value,
+                elements.longitudeInput.value,
+            );
+        },
         initialPosition: oldValues.latitude && oldValues.longitude
             ? { latitude: oldValues.latitude, longitude: oldValues.longitude, placeId: oldValues.placeId }
             : null,
@@ -266,6 +278,7 @@ export function initDeliveryLocation(config) {
                     placeId,
                     formattedAddress,
                     skipReverseGeocode: Boolean(formattedAddress),
+                    refreshThumbnail: false,
                 });
                 return;
             }
@@ -274,7 +287,7 @@ export function initDeliveryLocation(config) {
                 applyFormattedAddress(formattedAddress);
             }
 
-            updateCoordinates(latitude, longitude, placeId);
+            updateCoordinates(latitude, longitude, placeId, { refreshThumbnail: false });
             showSelectedState();
             setAddressLoading(true);
 

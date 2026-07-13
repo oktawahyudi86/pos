@@ -164,6 +164,8 @@
 
     .address-map-thumbnail {
         position: relative;
+        z-index: 1;
+        isolation: isolate;
         height: 8.75rem;
         cursor: pointer;
         border-bottom: 1px solid #dfe3e9;
@@ -180,7 +182,7 @@
         position: absolute;
         right: 0.75rem;
         bottom: 0.75rem;
-        z-index: 500;
+        z-index: 2;
         display: inline-flex;
         align-items: center;
         gap: 0.25rem;

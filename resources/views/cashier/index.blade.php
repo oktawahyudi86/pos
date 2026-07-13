@@ -52,7 +52,7 @@ $navItems = [
                 font-size: 16px !important;
             }
         }
-        @media (max-width: 390px) {
+        @media (max-width: 480px) {
             .cashier-topbar {
                 padding-left: 0.75rem;
                 padding-right: 0.75rem;
@@ -127,8 +127,8 @@ $navItems = [
         }
     </style>
 </head>
-<body class="mobile-no-zoom overflow-x-hidden bg-[#f6faff] text-[#171c20]" style="font-family: 'Plus Jakarta Sans', sans-serif;">
-    <div class="cashier-safe-height flex w-full">
+<body class="mobile-no-zoom w-full max-w-full overflow-x-hidden bg-[#f6faff] text-[#171c20]" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+    <div class="cashier-safe-height flex w-full max-w-full overflow-x-hidden">
         <aside class="cashier-sidebar fixed left-0 top-0 z-50 hidden h-screen w-64 flex-col gap-2 border-r border-[#c6c5d2] bg-[#f6faff] p-4 transition-all duration-300 lg:flex">
             <div class="sidebar-header mb-8 flex items-center">
                 <a href="{{ route('dashboard') }}" class="sidebar-brand flex min-w-0 items-center gap-3 rounded-xl px-4 py-2">
@@ -171,8 +171,8 @@ $navItems = [
             </div>
         </aside>
 
-        <main class="cashier-main relative flex min-h-dvh flex-1 flex-col pt-16 transition-all duration-300 lg:ml-64">
-            <header class="cashier-topbar fixed left-0 right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-[#c6c5d2] bg-[#f6faff] px-4 transition-all duration-300 sm:px-6 lg:left-64">
+        <main class="cashier-main relative flex min-h-dvh min-w-0 max-w-full flex-1 flex-col overflow-x-hidden pt-16 transition-all duration-300 lg:ml-64">
+            <header class="cashier-topbar fixed left-0 right-0 top-0 z-40 flex h-16 max-w-full items-center justify-between overflow-hidden border-b border-[#c6c5d2] bg-[#f6faff] px-4 transition-all duration-300 sm:px-6 lg:left-64">
                 <div class="flex items-center gap-4">
                     <div class="lg:hidden">
                         <img src="{{ asset('images/keijora-logo-cropped.png') }}" alt="Keijora" class="h-7 w-auto max-w-[120px] object-contain">
@@ -203,9 +203,9 @@ $navItems = [
                 </div>
             @endif
 
-            <div class="flex flex-1 flex-col gap-4 p-4 pb-32 lg:min-h-0 lg:flex-row lg:overflow-hidden lg:p-6">
-                <section class="flex min-h-0 flex-1 flex-col gap-4 lg:flex-[0.62] xl:gap-6">
-                    <form method="GET" action="{{ route('cashier.index') }}" class="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div class="flex w-full max-w-full min-w-0 flex-1 flex-col gap-4 overflow-x-hidden p-4 pb-32 lg:min-h-0 lg:flex-row lg:overflow-hidden lg:p-6">
+                <section class="flex min-h-0 min-w-0 max-w-full flex-1 flex-col gap-4 lg:flex-[0.62] xl:gap-6">
+                    <form method="GET" action="{{ route('cashier.index') }}" class="flex w-full min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
                         @if (request('category'))
                             <input type="hidden" name="category" value="{{ request('category') }}">
                         @endif
@@ -213,20 +213,20 @@ $navItems = [
                             <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#454650]">search</span>
                             <input name="search" value="{{ request('search') }}" class="h-12 w-full rounded-full border border-[#c6c5d2] bg-white pl-12 pr-4 text-base text-[#171c20] transition focus:border-[#001356] focus:outline-none focus:ring-1 focus:ring-[#001356] sm:text-sm" placeholder="Cari produk atau barcode..." type="text">
                         </div>
-                        <button class="rounded-full bg-[#001356] px-6 py-3 text-sm font-bold text-white">Cari</button>
+                        <button class="w-full rounded-full bg-[#001356] px-6 py-3 text-sm font-bold text-white sm:w-auto">Cari</button>
                     </form>
 
-                    <div class="custom-scrollbar flex gap-2 overflow-x-auto pb-2">
+                    <div class="custom-scrollbar flex w-full min-w-0 max-w-full gap-2 overflow-x-auto pb-2">
                         <a href="{{ route('cashier.index', request()->except('category')) }}" class="whitespace-nowrap rounded-full px-6 py-2 text-sm font-bold {{ request('category') ? 'bg-[#dfe3e9] text-[#454650]' : 'bg-[#001356] text-white' }}">Semua</a>
                         @foreach ($categories as $category)
                             <a href="{{ route('cashier.index', array_merge(request()->except('page'), ['category' => $category->slug])) }}" class="whitespace-nowrap rounded-full px-6 py-2 text-sm font-bold {{ request('category') === $category->slug ? 'bg-[#001356] text-white' : 'bg-[#dfe3e9] text-[#454650] hover:bg-[#c6c5d2]' }}">{{ $category->name }}</a>
                         @endforeach
                     </div>
 
-                    <div class="custom-scrollbar min-h-0 flex-1 lg:overflow-y-auto lg:pr-1">
-                        <div class="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                    <div class="custom-scrollbar min-h-0 min-w-0 max-w-full flex-1 overflow-x-hidden lg:overflow-y-auto lg:pr-1">
+                        <div class="grid w-full min-w-0 max-w-full grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                             @forelse ($products as $product)
-                                <article class="group overflow-hidden rounded-xl border border-[#c6c5d2] bg-white shadow-[0_4px_12px_rgba(27,43,107,0.04)] transition hover:shadow-lg active:scale-[0.99]">
+                                <article class="group min-w-0 overflow-hidden rounded-xl border border-[#c6c5d2] bg-white shadow-[0_4px_12px_rgba(27,43,107,0.04)] transition hover:shadow-lg active:scale-[0.99]">
                                     <button type="button" onclick="openProductModal('product-modal-{{ $product->id }}')" class="block w-full text-left {{ $product->stock < 1 ? 'cursor-not-allowed opacity-60' : 'cursor-pointer' }}" @disabled($product->stock < 1)>
                                         <div class="relative h-24 bg-[#dfe3e9] sm:h-36 lg:h-28 xl:h-32 2xl:h-36">
                                             @if ($product->image_path)

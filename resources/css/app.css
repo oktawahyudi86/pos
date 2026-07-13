@@ -4,13 +4,21 @@
 
 @layer base {
     html {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
         -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
     }
 
     .mobile-no-zoom input,
     .mobile-no-zoom textarea,
-    .mobile-no-zoom select,
-    .mobile-no-zoom button {
+    .mobile-no-zoom select {
         font-size: 16px;
     }
 

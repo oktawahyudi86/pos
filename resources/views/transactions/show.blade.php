@@ -9,6 +9,7 @@
         ]
         : [
             ['label' => 'Kasir', 'icon' => 'shopping_basket', 'href' => route('cashier.index'), 'active' => false],
+            ['label' => 'Orderan', 'icon' => 'pending_actions', 'href' => route('cashier.orders.index'), 'active' => false],
             ['label' => 'Transaksi', 'icon' => 'receipt_long', 'href' => route('transactions.index'), 'active' => true],
         ];
 @endphp
@@ -47,7 +48,7 @@
         }
     </style>
 </head>
-<body class="mobile-no-zoom bg-[#f6faff] text-[#171c20]" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+<body class="mobile-no-zoom w-full max-w-full overflow-x-hidden bg-[#f6faff] text-[#171c20]" style="font-family: 'Plus Jakarta Sans', sans-serif;">
     <aside class="pos-sidebar no-print fixed left-0 top-0 z-50 hidden h-screen w-64 flex-col gap-2 border-r border-[#c6c5d2] bg-[#f6faff] p-4 transition-all duration-300 md:flex">
         <div class="mb-8 flex items-center">
             <a href="{{ route('dashboard') }}" class="sidebar-brand flex min-w-0 items-center gap-3 rounded-xl px-4 py-2">
@@ -87,8 +88,8 @@
         </div>
     </header>
 
-    <main class="pos-main min-h-screen pt-20 transition-all duration-300 md:ml-64">
-        <div class="mx-auto grid max-w-7xl gap-5 px-4 pb-24 md:px-6 md:pb-6 lg:grid-cols-[1fr_380px]">
+    <main class="pos-main min-h-screen min-w-0 max-w-full overflow-x-hidden pt-20 transition-all duration-300 md:ml-64">
+        <div class="mx-auto grid w-full max-w-7xl min-w-0 gap-5 overflow-x-hidden px-4 pb-24 md:px-6 md:pb-6 lg:grid-cols-[1fr_380px]">
             <section class="print-card rounded-2xl border border-[#c6c5d2] bg-white p-5 shadow-[0_8px_20px_rgba(27,43,107,0.05)]">
                 <div class="grid gap-4 border-b border-[#dfe3e9] pb-5 md:grid-cols-3">
                     <div>

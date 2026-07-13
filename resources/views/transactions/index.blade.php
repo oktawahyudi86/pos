@@ -9,6 +9,7 @@
         ]
         : [
             ['label' => 'Kasir', 'icon' => 'shopping_basket', 'href' => route('cashier.index'), 'active' => false],
+            ['label' => 'Orderan', 'icon' => 'pending_actions', 'href' => route('cashier.orders.index'), 'active' => false],
             ['label' => 'Transaksi', 'icon' => 'receipt_long', 'href' => route('transactions.index'), 'active' => true],
         ];
 @endphp
@@ -45,7 +46,7 @@
         }
     </style>
 </head>
-<body class="mobile-no-zoom bg-[#f6faff] text-[#171c20]" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+<body class="mobile-no-zoom w-full max-w-full overflow-x-hidden bg-[#f6faff] text-[#171c20]" style="font-family: 'Plus Jakarta Sans', sans-serif;">
     <aside class="pos-sidebar fixed left-0 top-0 z-50 hidden h-screen w-64 flex-col gap-2 border-r border-[#c6c5d2] bg-[#f6faff] p-4 transition-all duration-300 md:flex">
         <div class="mb-8 flex items-center">
             <a href="{{ route('dashboard') }}" class="sidebar-brand flex min-w-0 items-center gap-3 rounded-xl px-4 py-2">
@@ -114,8 +115,8 @@
         </div>
     </header>
 
-    <main class="pos-main min-h-screen pt-20 transition-all duration-300 md:ml-64">
-        <div class="space-y-6 px-4 pb-24 md:px-6 md:pb-6">
+    <main class="pos-main min-h-screen min-w-0 max-w-full overflow-x-hidden pt-20 transition-all duration-300 md:ml-64">
+        <div class="w-full max-w-full space-y-6 overflow-x-hidden px-4 pb-24 md:px-6 md:pb-6">
             @if (session('status'))
                 <div class="rounded-xl border border-[#b9c7df] bg-[#eef3ff] px-4 py-3 text-sm font-semibold text-[#001356]">
                     {{ session('status') }}
@@ -230,11 +231,11 @@
         </div>
     </main>
 
-    <nav class="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around rounded-t-xl bg-[#dfe3e9] px-4 py-3 shadow-[0_-4px_12px_rgba(27,43,107,0.08)] md:hidden">
+    <nav class="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around rounded-t-xl bg-[#dfe3e9] px-2 py-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(27,43,107,0.08)] md:hidden">
         @foreach (array_slice($navItems, 0, 4) as $item)
-            <a href="{{ $item['href'] }}" class="flex flex-col items-center justify-center px-4 py-2 text-xs font-bold transition {{ $item['active'] ? 'rounded-full bg-[#001356] text-white' : 'text-[#454650]' }}">
-                <span class="material-symbols-outlined">{{ $item['icon'] }}</span>
-                <span>{{ \Illuminate\Support\Str::limit($item['label'], 8, '') }}</span>
+            <a href="{{ $item['href'] }}" class="flex min-w-0 flex-1 flex-col items-center justify-center px-2 py-2 text-[11px] font-bold transition {{ $item['active'] ? 'rounded-full bg-[#001356] text-white' : 'text-[#454650]' }}">
+                <span class="material-symbols-outlined text-[21px]">{{ $item['icon'] }}</span>
+                <span class="truncate">{{ \Illuminate\Support\Str::limit($item['label'], 8, '') }}</span>
             </a>
         @endforeach
     </nav>

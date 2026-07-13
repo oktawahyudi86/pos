@@ -62,6 +62,44 @@ class OnlineOrder extends Model
         return 'https://www.google.com/maps?q='.$this->delivery_latitude.','.$this->delivery_longitude;
     }
 
+    public function deliveryDirectionsUrl(): ?string
+    {
+        if ($this->delivery_latitude === null || $this->delivery_longitude === null) {
+            return null;
+        }
+
+        return 'https://www.google.com/maps/dir/?api=1&destination='.$this->delivery_latitude.','.$this->delivery_longitude;
+    }
+
+    public function deliveryAreaParts(): array
+    {
+        return array_filter([
+            'Provinsi' => $this->delivery_province,
+            'Kota/Kab' => $this->delivery_city,
+            'Kecamatan' => $this->delivery_district,
+            'Kelurahan/Desa' => $this->delivery_village,
+            'Kode Pos' => $this->delivery_postal_code,
+        ], fn ($value) => filled($value));
+    }
+
+    public function deliveryAreaSummary(): ?string
+    {
+        $parts = collect($this->deliveryAreaParts())->values()->all();
+
+        return $parts === [] ? null : implode(', ', $parts);
+    }
+
+    public function customerWhatsappUrl(): string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $this->wa_number) ?: '';
+
+        if (str_starts_with($digits, '0')) {
+            $digits = '62'.substr($digits, 1);
+        }
+
+        return 'https://wa.me/'.$digits;
+    }
+
     public static function statuses(): array
     {
         return [

@@ -6,7 +6,7 @@
         : null;
 @endphp
 
-<x-online-layout :tenant="$tenant" title="Checkout" active="cart">
+<x-online-layout :tenant="$tenant" title="Checkout" active="cart" :back-url="route('online-orders.catalog', $tenant)">
     <section class="space-y-5">
         <div>
             <p class="text-[11px] font-bold uppercase tracking-[0.3em] text-[#767681]">Checkout</p>
@@ -89,6 +89,8 @@
                         Gunakan lokasi saya
                     </button>
 
+                    <div id="coverage-warning" class="hidden rounded-xl border border-[#ffdad6] bg-[#fff4f2] px-4 py-3 text-xs font-semibold leading-5 text-[#93000a]"></div>
+
                     <div id="location-status" class="rounded-xl border border-dashed border-[#c6c5d2] bg-white px-4 py-3 text-xs font-semibold leading-5 text-[#454650]">
                         Lokasi belum terdeteksi. Izinkan akses lokasi agar titik Maps ikut terkirim.
                     </div>
@@ -163,7 +165,7 @@
                 </div>
             </div>
 
-            <button class="w-full rounded-xl bg-[#001356] px-4 py-4 text-sm font-extrabold text-white shadow-sm {{ $cart->isEmpty() ? 'pointer-events-none opacity-60' : '' }}">Buat Pesanan</button>
+            <button id="checkout-submit-button" class="w-full rounded-xl bg-[#001356] px-4 py-4 text-sm font-extrabold text-white shadow-sm {{ $cart->isEmpty() ? 'pointer-events-none opacity-60' : '' }}">Buat Pesanan</button>
         </form>
     </section>
 
@@ -181,6 +183,10 @@
         const villageInput = document.getElementById('delivery-village');
         const postalCodeInput = document.getElementById('delivery-postal-code');
         const reverseGeocodeUrl = @json(route('online-orders.reverse-geocode', $tenant));
+        const deliveryCoverageConfig = @json($deliveryCoverage);
+        const outOfCoverageMessage = @json(\App\Services\DeliveryCoverageService::OUT_OF_COVERAGE_MESSAGE);
+        const checkoutSubmitButton = document.getElementById('checkout-submit-button');
+        const coverageWarning = document.getElementById('coverage-warning');
 
         const statusClasses = {
             idle: 'rounded-xl border border-dashed border-[#c6c5d2] bg-white px-4 py-3 text-xs font-semibold leading-5 text-[#454650]',
@@ -191,6 +197,74 @@
 
         let addressManuallyEdited = Boolean(addressInput?.value.trim());
         let isDetectingLocation = false;
+        let coverageState = { within: true, message: null };
+
+        function isCoverageRestrictionActive() {
+            return Boolean(deliveryCoverageConfig?.enabled)
+                && Number(deliveryCoverageConfig?.max_radius_km) > 0
+                && deliveryCoverageConfig?.store_latitude !== null
+                && deliveryCoverageConfig?.store_longitude !== null;
+        }
+
+        function distanceKm(fromLat, fromLng, toLat, toLng) {
+            const earthRadius = 6371;
+            const latDelta = (toLat - fromLat) * Math.PI / 180;
+            const lngDelta = (toLng - fromLng) * Math.PI / 180;
+            const a = Math.sin(latDelta / 2) ** 2
+                + Math.cos(fromLat * Math.PI / 180) * Math.cos(toLat * Math.PI / 180) * Math.sin(lngDelta / 2) ** 2;
+
+            return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function evaluateCoverageLocally(latitude, longitude) {
+            if (!isCoverageRestrictionActive()) {
+                return { within: true, message: null };
+            }
+
+            if (!latitude || !longitude) {
+                return {
+                    within: false,
+                    message: 'Aktifkan lokasi HP untuk memastikan alamat pengantaran berada dalam jangkauan kami.',
+                };
+            }
+
+            const distance = distanceKm(
+                Number(deliveryCoverageConfig.store_latitude),
+                Number(deliveryCoverageConfig.store_longitude),
+                Number(latitude),
+                Number(longitude),
+            );
+
+            if (distance > Number(deliveryCoverageConfig.max_radius_km)) {
+                return { within: false, message: outOfCoverageMessage };
+            }
+
+            return { within: true, message: null };
+        }
+
+        function applyCoverageState(coverage) {
+            coverageState = {
+                within: coverage?.within_coverage ?? coverage?.within ?? true,
+                message: coverage?.message ?? null,
+            };
+
+            const blocked = isCoverageRestrictionActive() && !coverageState.within;
+
+            if (coverageWarning) {
+                coverageWarning.classList.toggle('hidden', !blocked || !coverageState.message);
+                coverageWarning.textContent = coverageState.message || '';
+            }
+
+            if (checkoutSubmitButton) {
+                checkoutSubmitButton.disabled = blocked;
+                checkoutSubmitButton.classList.toggle('pointer-events-none', blocked);
+                checkoutSubmitButton.classList.toggle('opacity-60', blocked);
+            }
+        }
+
+        function updateCoverageFromCoordinates(latitude, longitude) {
+            applyCoverageState(evaluateCoverageLocally(latitude, longitude));
+        }
 
         function sanitizePhoneNumber() {
             if (!waNumberInput) return;
@@ -216,6 +290,8 @@
             mapsPreviewLink.href = mapsUrl;
             mapsPreviewLink.classList.remove('hidden');
             mapsPreviewLink.classList.add('flex');
+
+            updateCoverageFromCoordinates(latitude, longitude);
         }
 
         function updateAddressComponents(components = {}) {
@@ -296,11 +372,23 @@
                         applyDetectedAddress(geocoded.address);
                     }
 
-                    setStatus('success', 'Alamat berhasil diperbarui');
+                    if (geocoded.coverage) {
+                        applyCoverageState(geocoded.coverage);
+                    } else {
+                        updateCoverageFromCoordinates(latitude, longitude);
+                    }
+
+                    setStatus('success', coverageState.within
+                        ? 'Alamat berhasil diperbarui'
+                        : (coverageState.message || 'Alamat berhasil diperbarui'));
                 } catch (geocodeError) {
+                    updateCoverageFromCoordinates(latitude, longitude);
                     setStatus('error', geocodeError.message || 'Alamat tidak dapat ditentukan dari lokasi ini. Silakan isi alamat secara manual.');
                 }
             } catch (error) {
+                applyCoverageState({ within: false, message: isCoverageRestrictionActive()
+                    ? 'Aktifkan lokasi HP untuk memastikan alamat pengantaran berada dalam jangkauan kami.'
+                    : null });
                 const denied = error?.code === 1;
                 const message = denied
                     ? 'Izin lokasi ditolak. Aktifkan izin lokasi atau isi alamat secara manual.'
@@ -337,9 +425,10 @@
             updateCoordinates(latitudeInput.value, longitudeInput.value);
 
             if (addressInput?.value.trim()) {
-                setStatus('success', 'Alamat berhasil diperbarui');
+                setStatus('success', coverageState.within ? 'Alamat berhasil diperbarui' : (coverageState.message || 'Alamat berhasil diperbarui'));
             }
         } else {
+            applyCoverageState(evaluateCoverageLocally(null, null));
             window.addEventListener('load', () => setTimeout(() => detectLocation(), 600));
         }
 

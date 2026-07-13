@@ -1,4 +1,4 @@
-<x-pos-layout active="tenants" title="Detail Tenant" subtitle="Aktivasi cafe, lihat admin, dan kelola akun kasir.">
+<x-pos-layout active="tenants" title="Detail Tenant" subtitle="Aktivasi cafe, lihat admin, dan kelola akun kasir." :back-url="route('super-admin.tenants.index')">
     <div class="space-y-6">
         <section class="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
             <article class="overflow-hidden rounded-2xl border border-[#c6c5d2] bg-white shadow-sm">

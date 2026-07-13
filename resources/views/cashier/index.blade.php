@@ -26,11 +26,11 @@ $navItems = [
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #c6c5d2; border-radius: 999px; }
         .cashier-safe-height { min-height: 100dvh; }
         .cart-drawer { transform: translateY(100%); transition: transform .24s ease; }
-        .cart-drawer-backdrop { opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+        .cart-drawer-backdrop { display: none; pointer-events: none; }
         body.cart-drawer-open { overflow: hidden; }
         body.modal-open { overflow: hidden; }
         body.cart-drawer-open .cart-drawer { transform: translateY(0); }
-        body.cart-drawer-open .cart-drawer-backdrop { opacity: 1; pointer-events: auto; }
+        body.cart-drawer-open .cart-drawer-backdrop { display: block; pointer-events: auto; }
         @media (min-width: 1024px) {
             body.sidebar-collapsed .cashier-sidebar { width: 5rem; padding-left: 0.75rem; padding-right: 0.75rem; }
             body.sidebar-collapsed .cashier-main { margin-left: 5rem; }
@@ -127,7 +127,7 @@ $navItems = [
         }
     </style>
 </head>
-<body class="enable-page-skeleton page-loading mobile-no-zoom w-full max-w-full overflow-x-hidden bg-[#f6faff] text-[#171c20]" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+<body class="mobile-no-zoom w-full max-w-full overflow-x-hidden bg-[#f6faff] text-[#171c20]" style="font-family: 'Plus Jakarta Sans', sans-serif;">
     <div class="cashier-safe-height flex w-full max-w-full overflow-x-hidden">
         <aside class="cashier-sidebar fixed left-0 top-0 z-50 hidden h-screen w-64 flex-col gap-2 border-r border-[#c6c5d2] bg-[#f6faff] p-4 transition-all duration-300 lg:flex">
             <div class="sidebar-header mb-8 flex items-center">
@@ -283,7 +283,7 @@ $navItems = [
         </main>
     </div>
 
-    <div class="cart-drawer-backdrop fixed inset-0 z-[80] bg-[#171c20]/50 lg:hidden" onclick="closeCartDrawer()"></div>
+    <div class="cart-drawer-backdrop fixed inset-0 z-[80] hidden bg-[#171c20]/50 lg:hidden" onclick="closeCartDrawer()" aria-hidden="true"></div>
 
     <section data-cart-panel="drawer" class="cart-drawer fixed inset-x-0 bottom-0 z-[90] flex max-h-[86dvh] flex-col overflow-hidden rounded-t-3xl border border-[#c6c5d2] bg-white shadow-[0_-14px_32px_rgba(27,43,107,0.22)] lg:hidden" aria-label="Keranjang transaksi">
         <div class="mx-auto mt-2 h-1.5 w-12 rounded-full bg-[#c6c5d2]"></div>
@@ -299,11 +299,11 @@ $navItems = [
         <span data-cart-total class="font-extrabold">{{ $formatRupiah($cartTotal) }}</span>
     </button>
 
-    <nav class="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around rounded-t-xl bg-[#dfe3e9] px-2 py-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(27,43,107,0.08)] lg:hidden">
-        @foreach (array_slice($navItems, 0, 4) as $item)
-            <a href="{{ $item['href'] }}" class="flex min-w-0 flex-1 flex-col items-center justify-center px-2 py-2 text-[11px] font-bold transition {{ $item['active'] ? 'rounded-full bg-[#001356] text-white' : 'text-[#454650]' }}">
-                <span class="material-symbols-outlined text-[21px]">{{ $item['icon'] }}</span>
-                <span class="truncate">{{ \Illuminate\Support\Str::limit($item['label'], 8, '') }}</span>
+    <nav class="fixed inset-x-0 bottom-0 z-50 grid grid-cols-3 gap-1.5 border-t border-[#c6c5d2] bg-white/95 px-2 py-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-2xl backdrop-blur lg:hidden">
+        @foreach ($navItems as $item)
+            <a href="{{ $item['href'] }}" class="flex min-h-[4.25rem] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-[10px] font-bold active:scale-[0.98] {{ $item['active'] ? 'bg-[#001356] text-white' : 'text-[#454650]' }}">
+                <span class="material-symbols-outlined text-[22px]">{{ $item['icon'] }}</span>
+                <span class="truncate">{{ $item['label'] }}</span>
             </a>
         @endforeach
     </nav>

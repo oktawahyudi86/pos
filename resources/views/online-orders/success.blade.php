@@ -5,7 +5,7 @@
         : null;
 @endphp
 
-<x-online-layout :tenant="$tenant" title="Pesanan Berhasil" active="orders">
+<x-online-layout :tenant="$tenant" title="Pesanan Berhasil" active="orders" :back-url="route('online-orders.catalog', $tenant)">
     <section class="space-y-5">
         <div class="rounded-xl border border-[#c6c5d2] bg-white p-6 text-center shadow-sm">
             <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#e7fff2] text-[#005236]">

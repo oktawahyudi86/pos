@@ -1,4 +1,4 @@
-<x-pos-layout active="products" title="Grup Varian" subtitle="Buat grup varian seperti Es/Panas atau ukuran yang dipilih kasir.">
+<x-pos-layout active="products" title="Grup Varian" subtitle="Buat grup varian seperti Es/Panas atau ukuran yang dipilih kasir." :back-url="route('admin.products.index')">
     <x-slot name="actions">
         <a href="{{ route('admin.variant-groups.create') }}" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#001356] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#1b2b6b]">
             <span class="material-symbols-outlined text-[20px]">add</span>

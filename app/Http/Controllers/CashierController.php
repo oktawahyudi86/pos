@@ -9,6 +9,7 @@ use App\Models\Setting;
 use App\Models\Transaction;
 use App\Models\VariantOption;
 use App\Services\ReceiptPngService;
+use App\Support\AppUrl;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
@@ -604,7 +605,7 @@ class CashierController extends Controller
             ."Total pesanan Kakak sebesar {$amount}.\n"
             ."Untuk rincian lengkapnya, silakan lihat nota yang kami lampirkan di bawah ini ya, Kak.\n\n"
             ."Link Nota:\n"
-            .route('transactions.receipt.short', ['code' => $transaction->receipt_code ?: (string) $transaction->getKey()])."\n\n"
+            .AppUrl::publicReceipt($transaction->receipt_code ?: (string) $transaction->getKey())."\n\n"
             ."Kalau ada yang kurang sesuai atau ada kendala, silakan kabari admin kami ya, Kak. Kami dengan senang hati akan membantu.\n\n"
             ."Terima kasih atas kepercayaannya. Selamat menikmati pesanan Kakak.";
     }

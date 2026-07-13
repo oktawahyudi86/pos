@@ -2,6 +2,8 @@
     'tenant',
     'title' => 'Keijora Online',
     'active' => 'menu',
+    'backUrl' => null,
+    'backLabel' => 'Kembali',
 ])
 
 @php
@@ -93,9 +95,15 @@
     <div class="customer-page-content">
     <header id="online-page-header" class="fixed inset-x-0 top-0 z-50 border-b border-[#d7dde8] bg-white/98 shadow-[0_4px_12px_rgba(27,43,107,0.04)] backdrop-blur transition-all duration-200">
         <div class="mx-auto flex h-20 w-full max-w-5xl items-center justify-between px-4 sm:px-6">
-            <a href="{{ route('online-orders.catalog', $tenant) }}" class="online-header-foreground flex h-11 w-11 items-center justify-center rounded-full text-[#001356] transition-colors duration-200">
-                <span class="material-symbols-outlined text-[30px]">restaurant_menu</span>
-            </a>
+            @if ($backUrl)
+                <a href="{{ $backUrl }}" class="online-header-foreground flex h-11 w-11 items-center justify-center rounded-full text-[#001356] transition-colors duration-200 active:scale-[0.98]" aria-label="{{ $backLabel }}">
+                    <span class="material-symbols-outlined text-[30px]">arrow_back</span>
+                </a>
+            @else
+                <a href="{{ route('online-orders.catalog', $tenant) }}" class="online-header-foreground flex h-11 w-11 items-center justify-center rounded-full text-[#001356] transition-colors duration-200">
+                    <span class="material-symbols-outlined text-[30px]">restaurant_menu</span>
+                </a>
+            @endif
 
             <div class="flex min-w-0 items-center gap-2">
                 @if ($receiptLogoUrl)

@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Setting;
 use App\Models\Tenant;
 use App\Models\VariantOption;
+use App\Services\DeliveryCoverageService;
 use App\Services\ReverseGeocodingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +23,9 @@ use Illuminate\Support\Str;
 
 class OnlineOrderController extends Controller
 {
+    public function __construct(
+        private readonly DeliveryCoverageService $deliveryCoverageService,
+    ) {}
     public function index(Tenant $tenant, Request $request): View
     {
         abort_unless($tenant->isActive(), 404);
@@ -205,6 +209,21 @@ class OnlineOrderController extends Controller
             'payment_method' => ['required', Rule::in($activePaymentMethods)],
         ]);
 
+        $deliverySettings = $this->deliveryCoverageService->settingsForTenant($tenant->id);
+        $coverage = $this->deliveryCoverageService->evaluate(
+            isset($validated['delivery_latitude']) ? (float) $validated['delivery_latitude'] : null,
+            isset($validated['delivery_longitude']) ? (float) $validated['delivery_longitude'] : null,
+            $deliverySettings,
+        );
+
+        if ($coverage['active'] && ! $coverage['within_coverage']) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'address' => $coverage['message'] ?? DeliveryCoverageService::OUT_OF_COVERAGE_MESSAGE,
+                ]);
+        }
+
         [$cartSubtotal, $shippingCost, $total] = $this->cartTotals($cart);
 
         $order = DB::transaction(function () use ($tenant, $cart, $validated, $cartSubtotal, $shippingCost, $total) {
@@ -292,7 +311,17 @@ class OnlineOrderController extends Controller
             ], 422);
         }
 
-        return response()->json($result);
+        $deliverySettings = $this->deliveryCoverageService->settingsForTenant($tenant->id);
+        $coverage = $this->deliveryCoverageService->evaluate(
+            (float) $validated['latitude'],
+            (float) $validated['longitude'],
+            $deliverySettings,
+        );
+
+        return response()->json([
+            ...$result,
+            'coverage' => $coverage,
+        ]);
     }
 
     public function review(Tenant $tenant): View
@@ -302,6 +331,7 @@ class OnlineOrderController extends Controller
         [$cart, $cartSubtotal, $shippingCost, $total] = $this->cartSummary($tenant);
         $paymentInfo = $this->paymentInfo($tenant);
         $onlinePaymentMethods = $this->activeOnlinePaymentMethodKeys($tenant);
+        $deliveryCoverage = $this->deliveryCoverageService->settingsForTenant($tenant->id);
 
         return view('online-orders.checkout', compact(
             'tenant',
@@ -311,6 +341,7 @@ class OnlineOrderController extends Controller
             'total',
             'paymentInfo',
             'onlinePaymentMethods',
+            'deliveryCoverage',
         ));
     }
 

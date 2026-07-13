@@ -231,11 +231,11 @@
         </div>
     </main>
 
-    <nav class="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around rounded-t-xl bg-[#dfe3e9] px-2 py-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(27,43,107,0.08)] md:hidden">
-        @foreach (array_slice($navItems, 0, 4) as $item)
-            <a href="{{ $item['href'] }}" class="flex min-w-0 flex-1 flex-col items-center justify-center px-2 py-2 text-[11px] font-bold transition {{ $item['active'] ? 'rounded-full bg-[#001356] text-white' : 'text-[#454650]' }}">
-                <span class="material-symbols-outlined text-[21px]">{{ $item['icon'] }}</span>
-                <span class="truncate">{{ \Illuminate\Support\Str::limit($item['label'], 8, '') }}</span>
+    <nav class="fixed inset-x-0 bottom-0 z-50 grid grid-cols-3 gap-1.5 border-t border-[#c6c5d2] bg-white/95 px-2 py-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-2xl backdrop-blur md:hidden">
+        @foreach ($navItems as $item)
+            <a href="{{ $item['href'] }}" class="flex min-h-[4.25rem] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-[10px] font-bold active:scale-[0.98] {{ $item['active'] ? 'bg-[#001356] text-white' : 'text-[#454650]' }}">
+                <span class="material-symbols-outlined text-[22px]">{{ $item['icon'] }}</span>
+                <span class="truncate">{{ $item['label'] }}</span>
             </a>
         @endforeach
     </nav>

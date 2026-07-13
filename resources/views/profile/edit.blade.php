@@ -1,29 +1,33 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Profile') }}
-        </h2>
-    </x-slot>
+@php
+    $user = auth()->user();
+    $profileBackUrl = $user->hasRole('Super Admin')
+        ? route('super-admin.dashboard')
+        : ($user->hasRole('Admin')
+            ? route('dashboard')
+            : route('cashier.index'));
+    $profileActive = $user->hasRole('Super Admin')
+        ? 'dashboard'
+        : ($user->hasRole('Admin') ? 'dashboard' : 'cashier');
+@endphp
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.update-profile-information-form')
-                </div>
+<x-pos-layout active="{{ $profileActive }}" title="Profil" subtitle="Kelola informasi akun dan keamanan login Anda." :back-url="$profileBackUrl">
+    <div class="mx-auto max-w-3xl space-y-6">
+        <div class="rounded-2xl border border-[#c6c5d2] bg-white p-5 shadow-sm sm:p-8">
+            <div class="max-w-xl">
+                @include('profile.partials.update-profile-information-form')
             </div>
+        </div>
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.update-password-form')
-                </div>
+        <div class="rounded-2xl border border-[#c6c5d2] bg-white p-5 shadow-sm sm:p-8">
+            <div class="max-w-xl">
+                @include('profile.partials.update-password-form')
             </div>
+        </div>
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.delete-user-form')
-                </div>
+        <div class="rounded-2xl border border-[#c6c5d2] bg-white p-5 shadow-sm sm:p-8">
+            <div class="max-w-xl">
+                @include('profile.partials.delete-user-form')
             </div>
         </div>
     </div>
-</x-app-layout>
+</x-pos-layout>

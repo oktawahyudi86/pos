@@ -72,19 +72,23 @@
         </nav>
     </aside>
 
-    <header class="pos-topbar no-print fixed left-0 right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-[#c6c5d2] bg-[#f6faff] px-6 transition-all duration-300 md:left-64">
-        <div class="flex items-center gap-3">
-            <button type="button" onclick="togglePosSidebar()" class="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#c6c5d2] bg-white text-[#001356] shadow-sm hover:bg-[#eef3ff] md:flex">
+    <header class="pos-topbar no-print fixed left-0 right-0 top-0 z-40 flex h-16 items-center justify-between gap-3 border-b border-[#c6c5d2] bg-[#f6faff] px-4 transition-all duration-300 md:left-64 md:px-6">
+        <div class="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
+            <x-page-back-button :href="route('transactions.index')" label="Kembali ke daftar transaksi" class="h-10 w-10 px-0 sm:h-11 sm:w-auto sm:px-4" />
+            <button type="button" onclick="togglePosSidebar()" class="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#c6c5d2] bg-white text-[#001356] shadow-sm hover:bg-[#eef3ff] md:flex" aria-label="Buka tutup sidebar">
                 <span class="sidebar-collapse-icon material-symbols-outlined transition-transform">left_panel_close</span>
             </button>
-            <div>
-                <h1 class="text-lg font-extrabold text-[#171c20]">{{ $transaction->invoice_number }}</h1>
-                <p class="text-xs font-medium text-[#454650]">Detail transaksi dan ringkasan pembayaran.</p>
+            <div class="min-w-0">
+                <h1 class="truncate text-base font-extrabold text-[#171c20] md:text-lg">{{ $transaction->invoice_number }}</h1>
+                <p class="truncate text-xs font-medium text-[#454650]">Detail transaksi dan ringkasan pembayaran.</p>
             </div>
         </div>
-        <div class="flex items-center gap-2">
-            <a href="{{ route('transactions.index') }}" class="rounded-xl border border-[#c6c5d2] px-4 py-2 text-sm font-bold text-[#454650] hover:bg-white">Riwayat</a>
-            <a href="{{ route('transactions.receipt', $transaction) }}" target="_blank" rel="noopener noreferrer" class="rounded-xl bg-[#001356] px-4 py-2 text-sm font-bold text-white">Cetak Struk</a>
+        <div class="flex shrink-0 items-center gap-2">
+            <a href="{{ route('transactions.receipt', $transaction) }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 rounded-xl bg-[#001356] px-3 py-2 text-xs font-bold text-white sm:gap-2 sm:px-4 sm:text-sm">
+                <span class="material-symbols-outlined text-[18px] sm:hidden">print</span>
+                <span class="hidden sm:inline">Cetak Struk</span>
+                <span class="sm:hidden">Cetak</span>
+            </a>
         </div>
     </header>
 
@@ -150,6 +154,15 @@
             </aside>
         </div>
     </main>
+
+    <nav class="no-print fixed inset-x-0 bottom-0 z-50 grid grid-cols-3 gap-1.5 border-t border-[#c6c5d2] bg-white/95 px-2 py-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-2xl backdrop-blur md:hidden {{ auth()->user()->hasRole('Admin') ? 'sm:grid-cols-4' : '' }}">
+        @foreach ($navItems as $item)
+            <a href="{{ $item['href'] }}" class="flex min-h-[4.25rem] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-[10px] font-bold active:scale-[0.98] {{ $item['active'] ? 'bg-[#001356] text-white' : 'text-[#454650]' }}">
+                <span class="material-symbols-outlined text-[22px]">{{ $item['icon'] }}</span>
+                <span class="truncate">{{ $item['label'] }}</span>
+            </a>
+        @endforeach
+    </nav>
 
     <script>
         const sidebarPreferenceKey = 'pos-sidebar-collapsed';

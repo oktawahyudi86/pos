@@ -320,6 +320,51 @@
             <section class="rounded-2xl border border-[#c6c5d2] bg-white p-4 shadow-[0_8px_20px_rgba(27,43,107,0.05)] sm:p-5">
                 <div class="flex items-start justify-between gap-4">
                     <div>
+                        <h3 class="text-lg font-extrabold text-[#171c20]">Batas Wilayah Pengantaran</h3>
+                        <p class="mt-1 text-sm text-[#454650]">Customer di luar radius tidak bisa checkout. Mereka akan melihat notifikasi wilayah belum tercover.</p>
+                    </div>
+                    <span class="rounded-full bg-[#dde1ff] px-3 py-1 text-xs font-extrabold text-[#001356]">Online</span>
+                </div>
+
+                <div class="mt-4 space-y-4">
+                    <label class="flex min-h-16 cursor-pointer items-center justify-between rounded-xl border border-[#c6c5d2] p-4 transition has-[:checked]:border-[#001356] has-[:checked]:bg-[#eef3ff]">
+                        <span class="flex items-center gap-3 text-sm font-bold text-[#171c20]">
+                            <span class="material-symbols-outlined text-[#001356]">radar</span>
+                            Aktifkan batas jarak pengantaran
+                        </span>
+                        <input type="hidden" name="online_delivery_enabled" value="0">
+                        <input type="checkbox" name="online_delivery_enabled" value="1" @checked(old('online_delivery_enabled', $onlineDelivery['enabled'] ?? false)) class="h-5 w-5 rounded border-[#c6c5d2] text-[#001356] focus:ring-[#001356]">
+                    </label>
+
+                    <div class="grid gap-4 md:grid-cols-3">
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-[#454650]">Maksimal jarak (km)</label>
+                            <input type="number" name="online_delivery_max_radius_km" step="0.1" min="0.1" max="100" value="{{ old('online_delivery_max_radius_km', $onlineDelivery['max_radius_km'] ?? '') }}" placeholder="Contoh: 5" class="w-full rounded-xl border-[#c6c5d2] text-sm focus:border-[#001356] focus:ring-[#001356]">
+                            <p class="mt-1 text-xs text-[#767681]">Orderan di luar jarak ini tidak bisa checkout.</p>
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-[#454650]">Latitude toko</label>
+                            <input id="store-latitude-input" type="number" name="online_delivery_store_latitude" step="any" value="{{ old('online_delivery_store_latitude', $onlineDelivery['store_latitude'] ?? '') }}" placeholder="-7.7956000" class="w-full rounded-xl border-[#c6c5d2] text-sm focus:border-[#001356] focus:ring-[#001356]">
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-[#454650]">Longitude toko</label>
+                            <input id="store-longitude-input" type="number" name="online_delivery_store_longitude" step="any" value="{{ old('online_delivery_store_longitude', $onlineDelivery['store_longitude'] ?? '') }}" placeholder="110.3695000" class="w-full rounded-xl border-[#c6c5d2] text-sm focus:border-[#001356] focus:ring-[#001356]">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <button id="detect-store-location-button" type="button" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#001356] bg-white px-4 text-sm font-extrabold text-[#001356] active:scale-[0.98]">
+                            <span class="material-symbols-outlined text-[20px]">my_location</span>
+                            Gunakan lokasi toko saat ini
+                        </button>
+                        <p id="store-location-status" class="text-xs font-semibold text-[#454650]">Isi koordinat pusat toko sebagai titik awal perhitungan jarak.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="rounded-2xl border border-[#c6c5d2] bg-white p-4 shadow-[0_8px_20px_rgba(27,43,107,0.05)] sm:p-5">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
                         <h3 class="text-lg font-extrabold text-[#171c20]">Format & Template Struk</h3>
                         <p class="mt-1 text-sm text-[#454650]">Atur identitas yang tampil di struk cetak dan riwayat transaksi.</p>
                     </div>
@@ -398,6 +443,39 @@
         setInterval(updateGlobalClock, 1000);
         applyPosSidebarPreference();
         updateGlobalClock();
+
+        const detectStoreLocationButton = document.getElementById('detect-store-location-button');
+        const storeLatitudeInput = document.getElementById('store-latitude-input');
+        const storeLongitudeInput = document.getElementById('store-longitude-input');
+        const storeLocationStatus = document.getElementById('store-location-status');
+
+        detectStoreLocationButton?.addEventListener('click', () => {
+            if (!navigator.geolocation) {
+                storeLocationStatus.textContent = 'Browser ini belum mendukung deteksi lokasi.';
+                storeLocationStatus.className = 'text-xs font-semibold text-[#93000a]';
+                return;
+            }
+
+            detectStoreLocationButton.disabled = true;
+            storeLocationStatus.textContent = 'Mengambil lokasi toko...';
+            storeLocationStatus.className = 'text-xs font-semibold text-[#001356]';
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    storeLatitudeInput.value = Number(position.coords.latitude).toFixed(7);
+                    storeLongitudeInput.value = Number(position.coords.longitude).toFixed(7);
+                    storeLocationStatus.textContent = 'Koordinat toko berhasil diisi.';
+                    storeLocationStatus.className = 'text-xs font-semibold text-[#005236]';
+                    detectStoreLocationButton.disabled = false;
+                },
+                () => {
+                    storeLocationStatus.textContent = 'Lokasi toko gagal dideteksi. Isi latitude dan longitude secara manual.';
+                    storeLocationStatus.className = 'text-xs font-semibold text-[#93000a]';
+                    detectStoreLocationButton.disabled = false;
+                },
+                { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+            );
+        });
     </script>
     <style>
         .mobile-no-zoom input,

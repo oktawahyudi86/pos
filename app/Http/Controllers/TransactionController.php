@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Services\ReceiptPngService;
+use App\Support\AppUrl;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\URL;
@@ -95,6 +96,6 @@ class TransactionController extends Controller
     {
         $code = $transaction->receipt_code ?: (string) $transaction->getKey();
 
-        return route('transactions.receipt.short', ['code' => $code]);
+        return AppUrl::publicReceipt($code);
     }
 }

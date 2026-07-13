@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\OnlineOrder;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\Tenant;
 use App\Models\Transaction;
 use App\Models\User;
@@ -145,6 +146,74 @@ class OnlineOrderFlowTest extends TestCase
             ->assertUnprocessable();
 
         $this->assertSame(OnlineOrder::STATUS_SELESAI, $order->refresh()->status);
+    }
+
+    public function test_checkout_is_blocked_when_delivery_location_is_outside_radius(): void
+    {
+        [$tenant, $product] = $this->makeTenantProduct(stock: 8);
+
+        Setting::setValue('online_delivery', [
+            'enabled' => true,
+            'max_radius_km' => 3,
+            'store_latitude' => -7.7956,
+            'store_longitude' => 110.3695,
+        ], $tenant->id);
+
+        $this->post(route('online-orders.cart.store', $tenant), [
+            'product_id' => $product->id,
+            'quantity' => 1,
+        ])->assertRedirect();
+
+        $response = $this->from(route('online-orders.checkout.form', $tenant))
+            ->post(route('online-orders.checkout', $tenant), [
+                'customer_name' => 'Nia',
+                'wa_number' => '081234567890',
+                'address' => 'Jl. Luar Jangkauan',
+                'delivery_latitude' => -7.7506,
+                'delivery_longitude' => 110.3695,
+                'payment_method' => 'manual_transfer',
+            ]);
+
+        $response
+            ->assertRedirect(route('online-orders.checkout.form', $tenant))
+            ->assertSessionHasErrors('address');
+
+        $this->assertStringContainsString(
+            'belum tercover',
+            session('errors')->first('address')
+        );
+        $this->assertSame(0, OnlineOrder::count());
+    }
+
+    public function test_checkout_is_allowed_when_delivery_location_is_within_radius(): void
+    {
+        [$tenant, $product] = $this->makeTenantProduct(stock: 8);
+
+        Setting::setValue('online_delivery', [
+            'enabled' => true,
+            'max_radius_km' => 5,
+            'store_latitude' => -7.7956,
+            'store_longitude' => 110.3695,
+        ], $tenant->id);
+
+        $this->post(route('online-orders.cart.store', $tenant), [
+            'product_id' => $product->id,
+            'quantity' => 1,
+        ])->assertRedirect();
+
+        $response = $this->post(route('online-orders.checkout', $tenant), [
+            'customer_name' => 'Nia',
+            'wa_number' => '081234567890',
+            'address' => 'Jl. Dekat Toko',
+            'delivery_latitude' => -7.7960,
+            'delivery_longitude' => 110.3700,
+            'payment_method' => 'manual_transfer',
+        ]);
+
+        $order = OnlineOrder::first();
+
+        $response->assertRedirect(route('online-orders.success', [$tenant, $order]));
+        $this->assertNotNull($order);
     }
 
     public function test_online_order_views_render(): void

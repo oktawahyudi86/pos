@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Models\Tenant;
+use App\Services\DeliveryCoverageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -49,7 +50,9 @@ class SettingController extends Controller
             'cashier_wa_number' => '',
         ], $tenantId);
 
-        return view('admin.settings.edit', compact('paymentMethods', 'receipt', 'onlineBanner', 'onlinePayment'));
+        $onlineDelivery = app(DeliveryCoverageService::class)->settingsForTenant($tenantId);
+
+        return view('admin.settings.edit', compact('paymentMethods', 'receipt', 'onlineBanner', 'onlinePayment', 'onlineDelivery'));
     }
 
     public function update(Request $request): RedirectResponse
@@ -72,7 +75,19 @@ class SettingController extends Controller
             'online_qris_image' => ['nullable', 'image', 'max:3072'],
             'online_qris_merchant_name' => ['nullable', 'string', 'max:120'],
             'online_cashier_wa_number' => ['nullable', 'string', 'max:20'],
+            'online_delivery_enabled' => ['nullable', 'boolean'],
+            'online_delivery_max_radius_km' => ['nullable', 'numeric', 'min:0.1', 'max:100'],
+            'online_delivery_store_latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'online_delivery_store_longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
+
+        if ($request->boolean('online_delivery_enabled')) {
+            $request->validate([
+                'online_delivery_max_radius_km' => ['required', 'numeric', 'min:0.1', 'max:100'],
+                'online_delivery_store_latitude' => ['required', 'numeric', 'between:-90,90'],
+                'online_delivery_store_longitude' => ['required', 'numeric', 'between:-180,180'],
+            ]);
+        }
 
         $activePaymentMethods = $validated['payment_methods'] ?? [];
         $tenantId = auth()->user()->tenant_id;
@@ -133,6 +148,19 @@ class SettingController extends Controller
             'qris_image_path' => $onlinePayment['qris_image_path'] ?? null,
             'qris_merchant_name' => trim((string) ($validated['online_qris_merchant_name'] ?? '')),
             'cashier_wa_number' => preg_replace('/\D+/', '', (string) ($validated['online_cashier_wa_number'] ?? '')),
+        ], $tenantId);
+
+        Setting::setValue('online_delivery', [
+            'enabled' => $request->boolean('online_delivery_enabled'),
+            'max_radius_km' => $request->boolean('online_delivery_enabled')
+                ? (float) $validated['online_delivery_max_radius_km']
+                : null,
+            'store_latitude' => $request->boolean('online_delivery_enabled')
+                ? (float) $validated['online_delivery_store_latitude']
+                : null,
+            'store_longitude' => $request->boolean('online_delivery_enabled')
+                ? (float) $validated['online_delivery_store_longitude']
+                : null,
         ], $tenantId);
 
         return back()->with('status', 'Pengaturan berhasil disimpan.');

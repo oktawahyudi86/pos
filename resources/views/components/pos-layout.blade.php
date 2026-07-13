@@ -2,6 +2,8 @@
     'active' => '',
     'title' => 'POS',
     'subtitle' => '',
+    'backUrl' => null,
+    'backLabel' => 'Kembali',
 ])
 
 @php
@@ -167,23 +169,31 @@
         </div>
     </aside>
 
-    <header class="pos-topbar fixed left-0 right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-[#c6c5d2] bg-[#f6faff] px-6 transition-all duration-300 md:left-64">
-        <div class="flex min-w-0 items-center gap-4">
-            <button class="rounded-lg p-2 text-[#001356] md:hidden"><span class="material-symbols-outlined">menu</span></button>
-            <div class="hidden min-w-0 items-center gap-3 sm:flex">
-                <button type="button" onclick="togglePosSidebar()" class="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#c6c5d2] bg-white text-[#001356] shadow-sm hover:bg-[#eef3ff] md:flex" aria-label="Buka tutup sidebar">
-                    <span class="sidebar-collapse-icon material-symbols-outlined transition-transform">left_panel_close</span>
-                </button>
+    <header class="pos-topbar fixed left-0 right-0 top-0 z-40 flex h-16 items-center justify-between gap-3 border-b border-[#c6c5d2] bg-[#f6faff] px-4 transition-all duration-300 md:left-64 md:px-6">
+        <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+            @if ($backUrl)
+                <x-page-back-button :href="$backUrl" :label="$backLabel" class="h-10 w-10 px-0 sm:h-11 sm:w-auto sm:px-4" />
+            @else
+                <button type="button" class="rounded-lg p-2 text-[#001356] md:hidden" aria-hidden="true"><span class="material-symbols-outlined">menu</span></button>
+            @endif
+            <div class="flex min-w-0 items-center gap-2 sm:gap-3 {{ $backUrl ? 'flex' : 'hidden sm:flex' }}">
+                @unless ($backUrl)
+                    <button type="button" onclick="togglePosSidebar()" class="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#c6c5d2] bg-white text-[#001356] shadow-sm hover:bg-[#eef3ff] md:flex" aria-label="Buka tutup sidebar">
+                        <span class="sidebar-collapse-icon material-symbols-outlined transition-transform">left_panel_close</span>
+                    </button>
+                @endunless
                 <div class="min-w-0">
-                    <h1 class="truncate text-lg font-extrabold text-[#171c20]">{{ $title }}</h1>
+                    <h1 class="truncate text-base font-extrabold text-[#171c20] sm:text-lg">{{ $title }}</h1>
                     @if ($subtitle)
                         <p class="truncate text-xs font-medium text-[#454650]">{{ $subtitle }}</p>
                     @endif
                 </div>
             </div>
-            <div class="md:hidden">
-                <img src="{{ asset('images/keijora-logo-cropped.png') }}" alt="Keijora" class="h-7 w-auto max-w-[120px] object-contain">
-            </div>
+            @unless ($backUrl)
+                <div class="md:hidden">
+                    <img src="{{ asset('images/keijora-logo-cropped.png') }}" alt="Keijora" class="h-7 w-auto max-w-[120px] object-contain">
+                </div>
+            @endunless
         </div>
         <div class="flex shrink-0 items-center gap-4">
             @isset($actions)

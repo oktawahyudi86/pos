@@ -151,7 +151,7 @@ $navItems = [
                     </div>
 
                     <div class="custom-scrollbar min-h-0 flex-1 lg:overflow-y-auto lg:pr-1">
-                        <div class="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                             @forelse ($products as $product)
                                 <article class="group overflow-hidden rounded-xl border border-[#c6c5d2] bg-white shadow-[0_4px_12px_rgba(27,43,107,0.04)] transition hover:shadow-lg active:scale-[0.99]">
                                     <button type="button" onclick="openProductModal('product-modal-{{ $product->id }}')" class="block w-full text-left {{ $product->stock < 1 ? 'cursor-not-allowed opacity-60' : 'cursor-pointer' }}" @disabled($product->stock < 1)>
@@ -217,7 +217,7 @@ $navItems = [
         @include('cashier._cart-panel', ['showCloseButton' => true])
     </section>
 
-    <button type="button" onclick="openCartDrawer()" class="fixed bottom-[5.75rem] left-4 right-4 z-[70] flex h-14 items-center justify-between rounded-2xl bg-[#001356] px-5 text-white shadow-[0_12px_24px_rgba(0,19,86,0.22)] active:scale-[0.99] lg:hidden">
+    <button type="button" onclick="openCartDrawer()" class="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] left-4 right-4 z-[70] flex h-14 items-center justify-between rounded-2xl bg-[#001356] px-5 text-white shadow-[0_12px_24px_rgba(0,19,86,0.22)] active:scale-[0.99] lg:hidden">
         <span class="flex items-center gap-3 font-extrabold">
             <span class="material-symbols-outlined">shopping_cart</span>
             Keranjang
@@ -226,11 +226,11 @@ $navItems = [
         <span data-cart-total class="font-extrabold">{{ $formatRupiah($cartTotal) }}</span>
     </button>
 
-    <nav class="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around rounded-t-xl bg-[#dfe3e9] px-4 py-3 shadow-[0_-4px_12px_rgba(27,43,107,0.08)] lg:hidden">
+    <nav class="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around rounded-t-xl bg-[#dfe3e9] px-2 py-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(27,43,107,0.08)] lg:hidden">
         @foreach (array_slice($navItems, 0, 4) as $item)
-            <a href="{{ $item['href'] }}" class="flex flex-col items-center justify-center px-4 py-2 text-xs font-bold transition {{ $item['active'] ? 'rounded-full bg-[#001356] text-white' : 'text-[#454650]' }}">
-                <span class="material-symbols-outlined">{{ $item['icon'] }}</span>
-                <span>{{ \Illuminate\Support\Str::limit($item['label'], 8, '') }}</span>
+            <a href="{{ $item['href'] }}" class="flex min-w-0 flex-1 flex-col items-center justify-center px-2 py-2 text-[11px] font-bold transition {{ $item['active'] ? 'rounded-full bg-[#001356] text-white' : 'text-[#454650]' }}">
+                <span class="material-symbols-outlined text-[21px]">{{ $item['icon'] }}</span>
+                <span class="truncate">{{ \Illuminate\Support\Str::limit($item['label'], 8, '') }}</span>
             </a>
         @endforeach
     </nav>

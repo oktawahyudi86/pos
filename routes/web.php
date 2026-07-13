@@ -103,6 +103,7 @@ require __DIR__.'/auth.php';
 
 Route::prefix('{tenant:slug}')->name('online-orders.')->group(function () {
     Route::get('/', [OnlineOrderController::class, 'index'])->name('catalog');
+    Route::get('/produk/{product}', [OnlineOrderController::class, 'productDetail'])->name('product.detail');
     Route::post('/cart', [OnlineOrderController::class, 'storeCart'])->name('cart.store');
     Route::patch('/cart/{key}', [OnlineOrderController::class, 'updateCart'])->name('cart.update');
     Route::delete('/cart/{key}', [OnlineOrderController::class, 'destroyCart'])->name('cart.destroy');

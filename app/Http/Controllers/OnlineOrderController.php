@@ -34,7 +34,8 @@ class OnlineOrderController extends Controller
             ->get();
 
         $products = Product::query()
-            ->with(['category', 'variantGroups.options', 'addons'])
+            ->with('category')
+            ->withCount(['variantGroups', 'addons'])
             ->where('tenant_id', $tenant->id)
             ->where('is_active', true)
             ->when($request->filled('category'), fn ($query) => $query->whereHas('category', fn ($categoryQuery) => $categoryQuery->where('slug', $request->string('category'))))
@@ -60,6 +61,45 @@ class OnlineOrderController extends Controller
             'total',
             'paymentInfo'
         ));
+    }
+
+    public function productDetail(Tenant $tenant, Product $product)
+    {
+        abort_unless($tenant->isActive(), 404);
+        abort_unless((int) $product->tenant_id === (int) $tenant->id && $product->is_active, 404);
+
+        $product->load([
+            'category',
+            'variantGroups' => fn ($query) => $query->where('is_active', true)->with(['options' => fn ($optionQuery) => $optionQuery->where('is_active', true)]),
+            'addons' => fn ($query) => $query->where('is_active', true),
+        ]);
+
+        return response()->json([
+            'id' => $product->id,
+            'name' => $product->name,
+            'price' => (int) $product->price,
+            'stock' => (int) $product->stock,
+            'image_url' => $product->image_path ? asset('storage/'.$product->image_path) : null,
+            'category' => [
+                'name' => $product->category?->name ?? '',
+            ],
+            'variant_groups' => $product->variantGroups->map(fn ($group) => [
+                'id' => $group->id,
+                'name' => $group->name,
+                'is_required' => (bool) $group->is_required,
+                'selection_type' => $group->selection_type,
+                'options' => $group->options->map(fn ($option) => [
+                    'id' => $option->id,
+                    'name' => $option->name,
+                    'price_delta' => (int) $option->price_delta,
+                ])->values(),
+            ])->values(),
+            'addons' => $product->addons->map(fn ($addon) => [
+                'id' => $addon->id,
+                'name' => $addon->name,
+                'price' => (int) $addon->price,
+            ])->values(),
+        ]);
     }
 
     public function storeCart(Tenant $tenant, Request $request): RedirectResponse

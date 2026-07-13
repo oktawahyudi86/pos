@@ -142,11 +142,11 @@
         </div>
     </main>
 
-    <nav class="fixed inset-x-0 bottom-0 z-50 grid grid-cols-3 gap-1 border-t border-[#c6c5d2] bg-white/95 px-2 py-2 shadow-2xl backdrop-blur sm:grid-cols-5 md:hidden">
+    <nav class="fixed inset-x-0 bottom-0 z-50 grid grid-cols-3 gap-1 border-t border-[#c6c5d2] bg-white/95 px-1.5 py-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-2xl backdrop-blur sm:grid-cols-5 md:hidden">
         @foreach (array_slice($navItems, 0, 5) as $item)
-            <a href="{{ $item['href'] }}" class="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-bold {{ $active === $item['key'] ? 'bg-[#001356] text-white' : 'text-[#454650]' }}">
-                <span class="material-symbols-outlined text-[22px]">{{ $item['icon'] }}</span>
-                {{ $item['label'] }}
+            <a href="{{ $item['href'] }}" class="flex min-w-0 min-h-16 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-bold {{ $active === $item['key'] ? 'bg-[#001356] text-white' : 'text-[#454650]' }}">
+                <span class="material-symbols-outlined text-[21px]">{{ $item['icon'] }}</span>
+                <span class="truncate">{{ $item['label'] }}</span>
             </a>
         @endforeach
     </nav>

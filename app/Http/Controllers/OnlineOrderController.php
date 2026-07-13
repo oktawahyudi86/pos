@@ -1,0 +1,358 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Addon;
+use App\Models\Category;
+use App\Models\OnlineOrder;
+use App\Models\OnlineOrderItem;
+use App\Models\Product;
+use App\Models\Setting;
+use App\Models\Tenant;
+use App\Models\VariantOption;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
+use Illuminate\Support\Str;
+
+class OnlineOrderController extends Controller
+{
+    public function index(Tenant $tenant, Request $request): View
+    {
+        abort_unless($tenant->isActive(), 404);
+
+        [$cart, $cartSubtotal, $shippingCost, $total] = $this->cartSummary($tenant);
+
+        $categories = Category::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('is_active', true)
+            ->whereHas('products', fn ($query) => $query->where('is_active', true))
+            ->orderBy('name')
+            ->get();
+
+        $products = Product::query()
+            ->with(['category', 'variantGroups.options', 'addons'])
+            ->where('tenant_id', $tenant->id)
+            ->where('is_active', true)
+            ->when($request->filled('category'), fn ($query) => $query->whereHas('category', fn ($categoryQuery) => $categoryQuery->where('slug', $request->string('category'))))
+            ->when($request->filled('search'), fn ($query) => $query->where(function ($searchQuery) use ($request) {
+                $search = '%'.$request->string('search')->toString().'%';
+
+                $searchQuery
+                    ->where('name', 'like', $search)
+                    ->orWhere('sku', 'like', $search);
+            }))
+            ->orderBy('name')
+            ->get();
+
+        $paymentInfo = $this->paymentInfo($tenant);
+
+        return view('online-orders.catalog', compact(
+            'tenant',
+            'categories',
+            'products',
+            'cart',
+            'cartSubtotal',
+            'shippingCost',
+            'total',
+            'paymentInfo'
+        ));
+    }
+
+    public function storeCart(Tenant $tenant, Request $request): RedirectResponse
+    {
+        abort_unless($tenant->isActive(), 404);
+
+        $validated = $request->validate([
+            'product_id' => [
+                'required',
+                Rule::exists('products', 'id')->where(fn ($query) => $query->where('tenant_id', $tenant->id)),
+            ],
+            'quantity' => ['nullable', 'integer', 'min:1'],
+            'note' => ['nullable', 'string', 'max:160'],
+            'variant_options' => ['nullable', 'array'],
+            'variant_options.*' => ['nullable', 'integer', Rule::exists('variant_options', 'id')],
+            'addons' => ['nullable', 'array'],
+            'addons.*' => ['integer', Rule::exists('addons', 'id')->where(fn ($query) => $query->where('tenant_id', $tenant->id))],
+        ]);
+
+        $cart = $this->loadCart($tenant);
+        $cartItem = $this->makeCartItem($tenant, $validated);
+        $existingQuantity = $cart[$cartItem['key']]['quantity'] ?? 0;
+        $newQuantity = min($existingQuantity + $cartItem['quantity'], $cartItem['stock']);
+
+        $cartItem['quantity'] = $newQuantity;
+        $cartItem['line_total'] = $cartItem['unit_price'] * $newQuantity;
+        $cart[$cartItem['key']] = $cartItem;
+
+        session([$this->cartSessionKey($tenant) => $cart->all()]);
+
+        return back()->with('status', 'Produk ditambahkan ke keranjang.');
+    }
+
+    public function updateCart(Tenant $tenant, Request $request, string $key): RedirectResponse
+    {
+        abort_unless($tenant->isActive(), 404);
+
+        $validated = $request->validate([
+            'action' => ['required', 'in:increment,decrement'],
+        ]);
+
+        $cart = $this->loadCart($tenant);
+        if (! isset($cart[$key])) {
+            return back();
+        }
+
+        $quantity = $cart[$key]['quantity'] + ($validated['action'] === 'increment' ? 1 : -1);
+
+        if ($quantity < 1) {
+            unset($cart[$key]);
+        } else {
+            $cart[$key]['quantity'] = min($quantity, $cart[$key]['stock']);
+            $cart[$key]['line_total'] = $cart[$key]['unit_price'] * $cart[$key]['quantity'];
+        }
+
+        session([$this->cartSessionKey($tenant) => $cart->all()]);
+
+        return back()->with('status', 'Keranjang diperbarui.');
+    }
+
+    public function destroyCart(Tenant $tenant, string $key): RedirectResponse
+    {
+        abort_unless($tenant->isActive(), 404);
+
+        $cart = $this->loadCart($tenant);
+        unset($cart[$key]);
+
+        session([$this->cartSessionKey($tenant) => $cart->all()]);
+
+        return back();
+    }
+
+    public function checkout(Tenant $tenant, Request $request): RedirectResponse
+    {
+        abort_unless($tenant->isActive(), 404);
+
+        $cart = $this->loadCart($tenant);
+        abort_if($cart->isEmpty(), 422, 'Keranjang masih kosong.');
+
+        $validated = $request->validate([
+            'customer_name' => ['required', 'string', 'max:120'],
+            'wa_number' => ['required', 'string', 'max:30'],
+            'address' => ['required', 'string', 'max:1000'],
+        ]);
+
+        [$cartSubtotal, $shippingCost, $total] = $this->cartTotals($cart);
+
+        $order = DB::transaction(function () use ($tenant, $cart, $validated, $cartSubtotal, $shippingCost, $total) {
+            $quantityByProduct = $cart
+                ->groupBy('product_id')
+                ->map(fn ($items) => $items->sum('quantity'));
+
+            foreach ($quantityByProduct as $productId => $quantity) {
+                $product = Product::query()
+                    ->where('tenant_id', $tenant->id)
+                    ->lockForUpdate()
+                    ->find($productId);
+
+                if (! $product || $product->stock < $quantity) {
+                    abort(422, 'Stok produk tidak cukup.');
+                }
+            }
+
+            $order = OnlineOrder::create([
+                'tenant_id' => $tenant->id,
+                'order_number' => $this->makeOrderNumber($tenant),
+                'customer_name' => $validated['customer_name'],
+                'wa_number' => $validated['wa_number'],
+                'address' => $validated['address'],
+                'status' => 'pesanan_masuk',
+                'payment_method' => 'manual_transfer',
+                'subtotal' => $cartSubtotal,
+                'shipping_cost' => $shippingCost,
+                'total' => $total,
+                'placed_at' => now(),
+            ]);
+
+            foreach ($cart as $item) {
+                $orderItem = $order->items()->create([
+                    'product_id' => $item['product_id'],
+                    'product_name' => $item['name'],
+                    'base_price' => $item['base_price'],
+                    'unit_price' => $item['unit_price'],
+                    'quantity' => $item['quantity'],
+                    'line_total' => $item['line_total'],
+                    'note' => $item['note'] ?: null,
+                    'variant_payload' => $item['variant_options'],
+                    'addon_payload' => $item['addons'],
+                ]);
+            }
+
+            $order->statusLogs()->create([
+                'status' => 'pesanan_masuk',
+                'changed_at' => now(),
+            ]);
+
+            return $order;
+        });
+
+        session()->forget($this->cartSessionKey($tenant));
+
+        return redirect()->route('online-orders.success', [$tenant, $order]);
+    }
+
+    public function review(Tenant $tenant): View
+    {
+        abort_unless($tenant->isActive(), 404);
+
+        [$cart, $cartSubtotal, $shippingCost, $total] = $this->cartSummary($tenant);
+        $paymentInfo = $this->paymentInfo($tenant);
+
+        return view('online-orders.checkout', compact(
+            'tenant',
+            'cart',
+            'cartSubtotal',
+            'shippingCost',
+            'total',
+            'paymentInfo'
+        ));
+    }
+
+    public function success(Tenant $tenant, OnlineOrder $order): View
+    {
+        abort_unless((int) $order->tenant_id === (int) $tenant->id, 404);
+
+        $paymentInfo = $this->paymentInfo($tenant);
+
+        return view('online-orders.success', compact('tenant', 'order', 'paymentInfo'));
+    }
+
+    public function track(Tenant $tenant, Request $request): View
+    {
+        abort_unless($tenant->isActive(), 404);
+
+        $waNumber = $request->string('wa_number')->toString();
+        $orders = collect();
+
+        if ($waNumber !== '') {
+            $orders = OnlineOrder::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('wa_number', $waNumber)
+                ->with('items')
+                ->latest('placed_at')
+                ->get();
+        }
+
+        return view('online-orders.track', compact('tenant', 'waNumber', 'orders'));
+    }
+
+    private function cartSessionKey(Tenant $tenant): string
+    {
+        return 'online_order_cart_'.$tenant->id;
+    }
+
+    private function loadCart(Tenant $tenant): Collection
+    {
+        return collect(session($this->cartSessionKey($tenant), []));
+    }
+
+    private function cartTotals(Collection $cart): array
+    {
+        $cartSubtotal = (int) $cart->sum('line_total');
+        $shippingCost = $cartSubtotal > 0 ? 10000 : 0;
+        $total = $cartSubtotal + $shippingCost;
+
+        return [$cartSubtotal, $shippingCost, $total];
+    }
+
+    private function cartSummary(Tenant $tenant): array
+    {
+        $cart = $this->loadCart($tenant);
+        [$cartSubtotal, $shippingCost, $total] = $this->cartTotals($cart);
+
+        return [$cart, $cartSubtotal, $shippingCost, $total];
+    }
+
+    private function paymentInfo(Tenant $tenant): array
+    {
+        return Setting::getValue('online_payment', [
+            'bank_name' => 'Mandiri',
+            'account_number' => '1234567890',
+            'account_name' => $tenant->name,
+            'qris_text' => 'QRIS akan ditampilkan oleh kasir.',
+        ], $tenant->id);
+    }
+
+    private function makeCartItem(Tenant $tenant, array $validated): array
+    {
+        $product = Product::query()
+            ->with(['category', 'variantGroups.options', 'addons'])
+            ->where('tenant_id', $tenant->id)
+            ->where('is_active', true)
+            ->findOrFail($validated['product_id']);
+
+        abort_if($product->stock < 1, 422, 'Produk sedang habis.');
+
+        $quantity = min($validated['quantity'] ?? 1, $product->stock);
+        $variantOptionIds = collect($validated['variant_options'] ?? [])->filter()->values();
+        $addonIds = collect($validated['addons'] ?? [])->filter()->values();
+
+        $allowedGroupIds = $product->variantGroups->pluck('id');
+        $variantOptions = VariantOption::query()
+            ->with('variantGroup')
+            ->whereIn('id', $variantOptionIds)
+            ->where('is_active', true)
+            ->whereIn('variant_group_id', $allowedGroupIds)
+            ->get();
+
+        $addons = Addon::query()
+            ->where('tenant_id', $tenant->id)
+            ->whereIn('id', $addonIds)
+            ->where('is_active', true)
+            ->whereHas('products', fn ($query) => $query->whereKey($product->id))
+            ->get();
+
+        $unitPrice = (int) $product->price + (int) $variantOptions->sum('price_delta') + (int) $addons->sum('price');
+        $key = md5(json_encode([
+            'product_id' => $product->id,
+            'variant_options' => $variantOptions->pluck('id')->sort()->values(),
+            'addons' => $addons->pluck('id')->sort()->values(),
+            'note' => $validated['note'] ?? '',
+        ]));
+
+        return [
+            'key' => $key,
+            'product_id' => $product->id,
+            'name' => $product->name,
+            'base_price' => (int) $product->price,
+            'unit_price' => $unitPrice,
+            'quantity' => $quantity,
+            'line_total' => $unitPrice * $quantity,
+            'stock' => (int) $product->stock,
+            'note' => $validated['note'] ?? '',
+            'variant_options' => $variantOptions->map(fn ($option) => [
+                'id' => $option->id,
+                'group' => $option->variantGroup->name,
+                'name' => $option->name,
+                'price_delta' => (int) $option->price_delta,
+            ])->values()->all(),
+            'addons' => $addons->map(fn ($addon) => [
+                'id' => $addon->id,
+                'name' => $addon->name,
+                'price' => (int) $addon->price,
+            ])->values()->all(),
+        ];
+    }
+
+    private function makeOrderNumber(Tenant $tenant): string
+    {
+        do {
+            $orderNumber = 'ORD-'.now()->format('Ymd').'-'.Str::upper(Str::random(6));
+        } while (OnlineOrder::query()->where('tenant_id', $tenant->id)->where('order_number', $orderNumber)->exists());
+
+        return $orderNumber;
+    }
+}

@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    html {
+        -webkit-text-size-adjust: 100%;
+    }
+
+    .mobile-no-zoom input,
+    .mobile-no-zoom textarea,
+    .mobile-no-zoom select,
+    .mobile-no-zoom button {
+        font-size: 16px;
+    }
+
+    a,
+    button {
+        touch-action: manipulation;
+    }
+}

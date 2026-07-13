@@ -13,6 +13,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'customer_name',
     'wa_number',
     'address',
+    'address_note',
+    'delivery_latitude',
+    'delivery_longitude',
+    'delivery_province',
+    'delivery_city',
+    'delivery_district',
+    'delivery_village',
+    'delivery_postal_code',
     'status',
     'payment_method',
     'subtotal',
@@ -41,7 +49,18 @@ class OnlineOrder extends Model
         'processing_at' => 'datetime',
         'out_for_delivery_at' => 'datetime',
         'finished_at' => 'datetime',
+        'delivery_latitude' => 'decimal:7',
+        'delivery_longitude' => 'decimal:7',
     ];
+
+    public function deliveryMapUrl(): ?string
+    {
+        if ($this->delivery_latitude === null || $this->delivery_longitude === null) {
+            return null;
+        }
+
+        return 'https://www.google.com/maps?q='.$this->delivery_latitude.','.$this->delivery_longitude;
+    }
 
     public static function statuses(): array
     {

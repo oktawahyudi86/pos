@@ -108,6 +108,7 @@ Route::prefix('{tenant:slug}')->name('online-orders.')->group(function () {
     Route::patch('/cart/{key}', [OnlineOrderController::class, 'updateCart'])->name('cart.update');
     Route::delete('/cart/{key}', [OnlineOrderController::class, 'destroyCart'])->name('cart.destroy');
     Route::get('/checkout', [OnlineOrderController::class, 'review'])->name('checkout.form');
+    Route::get('/reverse-geocode', [OnlineOrderController::class, 'reverseGeocode'])->name('reverse-geocode');
     Route::post('/checkout', [OnlineOrderController::class, 'checkout'])->name('checkout');
     Route::get('/pesanan/{order}', [OnlineOrderController::class, 'success'])->name('success');
     Route::get('/cek-pesanan', [OnlineOrderController::class, 'track'])->name('track');

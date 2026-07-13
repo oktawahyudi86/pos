@@ -10,6 +10,8 @@ use App\Models\Product;
 use App\Models\Setting;
 use App\Models\Tenant;
 use App\Models\VariantOption;
+use App\Services\ReverseGeocodingService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -179,10 +181,22 @@ class OnlineOrderController extends Controller
         $cart = $this->loadCart($tenant);
         abort_if($cart->isEmpty(), 422, 'Keranjang masih kosong.');
 
+        $request->merge([
+            'wa_number' => preg_replace('/\D+/', '', (string) $request->input('wa_number')),
+        ]);
+
         $validated = $request->validate([
             'customer_name' => ['required', 'string', 'max:120'],
-            'wa_number' => ['required', 'string', 'max:30'],
+            'wa_number' => ['required', 'string', 'regex:/^[0-9]+$/', 'max:20'],
             'address' => ['required', 'string', 'max:1000'],
+            'address_note' => ['nullable', 'string', 'max:500'],
+            'delivery_latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'delivery_longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'province' => ['nullable', 'string', 'max:120'],
+            'city' => ['nullable', 'string', 'max:120'],
+            'district' => ['nullable', 'string', 'max:120'],
+            'village' => ['nullable', 'string', 'max:120'],
+            'postal_code' => ['nullable', 'string', 'max:20'],
         ]);
 
         [$cartSubtotal, $shippingCost, $total] = $this->cartTotals($cart);
@@ -209,6 +223,14 @@ class OnlineOrderController extends Controller
                 'customer_name' => $validated['customer_name'],
                 'wa_number' => $validated['wa_number'],
                 'address' => $validated['address'],
+                'address_note' => $validated['address_note'] ?? null,
+                'delivery_latitude' => $validated['delivery_latitude'] ?? null,
+                'delivery_longitude' => $validated['delivery_longitude'] ?? null,
+                'delivery_province' => $validated['province'] ?? null,
+                'delivery_city' => $validated['city'] ?? null,
+                'delivery_district' => $validated['district'] ?? null,
+                'delivery_village' => $validated['village'] ?? null,
+                'delivery_postal_code' => $validated['postal_code'] ?? null,
                 'status' => 'pesanan_masuk',
                 'payment_method' => 'manual_transfer',
                 'subtotal' => $cartSubtotal,
@@ -244,6 +266,29 @@ class OnlineOrderController extends Controller
         return redirect()->route('online-orders.success', [$tenant, $order]);
     }
 
+    public function reverseGeocode(Tenant $tenant, Request $request, ReverseGeocodingService $reverseGeocodingService): JsonResponse
+    {
+        abort_unless($tenant->isActive(), 404);
+
+        $validated = $request->validate([
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
+        ]);
+
+        try {
+            $result = $reverseGeocodingService->resolve(
+                (float) $validated['latitude'],
+                (float) $validated['longitude'],
+            );
+        } catch (\Throwable) {
+            return response()->json([
+                'message' => 'Alamat tidak dapat ditentukan dari lokasi ini. Silakan isi alamat secara manual.',
+            ], 422);
+        }
+
+        return response()->json($result);
+    }
+
     public function review(Tenant $tenant): View
     {
         abort_unless($tenant->isActive(), 404);
@@ -274,7 +319,7 @@ class OnlineOrderController extends Controller
     {
         abort_unless($tenant->isActive(), 404);
 
-        $waNumber = $request->string('wa_number')->toString();
+        $waNumber = preg_replace('/\D+/', '', $request->string('wa_number')->toString());
         $orders = collect();
 
         if ($waNumber !== '') {

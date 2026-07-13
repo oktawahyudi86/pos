@@ -17,6 +17,7 @@ export function createMapPicker({
     confirmButton,
     closeButtons = [],
     onLocationChange,
+    onCoordinatesPreview = null,
     onOpen = null,
     onClose = null,
     initialPosition = null,
@@ -39,6 +40,19 @@ export function createMapPicker({
             longitude: center.lng,
             placeId: currentPlaceId,
         };
+    }
+
+    function previewCoordinates(extra = {}) {
+        const coordinates = getCenterCoordinates();
+
+        if (!coordinates || !isOpen) {
+            return;
+        }
+
+        onCoordinatesPreview?.({
+            ...coordinates,
+            ...extra,
+        });
     }
 
     function emitLocationChange(extra = {}) {
@@ -82,7 +96,10 @@ export function createMapPicker({
             currentPlaceId = null;
         });
 
-        map.on('moveend', () => emitLocationChange());
+        map.on('moveend', () => {
+            previewCoordinates();
+            emitLocationChange();
+        });
 
         if (searchInput && searchResultsContainer && geocodeSearchUrl) {
             placeSearch = createPlaceSearch({
@@ -92,6 +109,12 @@ export function createMapPicker({
                 onSelect: (result) => {
                     currentPlaceId = result.place_id ?? null;
                     map.setView([result.latitude, result.longitude], 17);
+
+                    previewCoordinates({
+                        latitude: result.latitude,
+                        longitude: result.longitude,
+                        placeId: currentPlaceId,
+                    });
 
                     onLocationChange?.({
                         latitude: result.latitude,
@@ -123,6 +146,7 @@ export function createMapPicker({
         window.requestAnimationFrame(() => {
             map.invalidateSize();
             map.setView([latitude, longitude], zoom, { animate: false });
+            previewCoordinates();
             emitLocationChange();
         });
     }

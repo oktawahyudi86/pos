@@ -31,6 +31,8 @@ export function initDeliveryLocation(config) {
         addressMapThumbnailCanvas: document.getElementById('address-map-thumbnail-canvas'),
         coverageBanner: document.getElementById('coverage-banner'),
         coverageSuccess: document.getElementById('coverage-success'),
+        mapCoverageBanner: document.getElementById('map-coverage-banner'),
+        mapCoverageSuccess: document.getElementById('map-coverage-success'),
         locationHint: document.getElementById('location-hint'),
         checkoutSubmitButton: document.getElementById('checkout-submit-button'),
         latitudeInput: document.getElementById('delivery-latitude'),
@@ -62,6 +64,11 @@ export function initDeliveryLocation(config) {
     let coverageState = { within: true, message: null };
     let mapThumbnail = null;
     let mapPicker = null;
+    let locationResolveSeq = 0;
+
+    function syncCoverageForCoordinates(latitude, longitude) {
+        applyCoverageState(coverage.evaluate(latitude, longitude), { latitude, longitude });
+    }
 
     function setAddressLoading(isLoading) {
         isResolvingAddress = isLoading;
@@ -85,6 +92,8 @@ export function initDeliveryLocation(config) {
         if (placeId !== undefined) {
             elements.placeIdInput.value = placeId ?? '';
         }
+
+        syncCoverageForCoordinates(latitude, longitude);
 
         if (refreshThumbnail) {
             mapThumbnail?.update(latitude, longitude);
@@ -110,22 +119,36 @@ export function initDeliveryLocation(config) {
         mapThumbnail?.hide();
     }
 
-    function applyCoverageState(nextCoverage) {
+    function applyCoverageState(nextCoverage, previewCoords = null) {
         coverageState = {
             within: nextCoverage?.within ?? true,
             message: nextCoverage?.message ?? null,
         };
 
         const blocked = coverage.isRestrictionActive() && !coverageState.within;
-        const hasCoords = Boolean(elements.latitudeInput.value && elements.longitudeInput.value);
+        const hasCoords = previewCoords?.latitude && previewCoords?.longitude
+            ? true
+            : Boolean(elements.latitudeInput.value && elements.longitudeInput.value);
 
         elements.coverageBanner?.classList.toggle('hidden', !blocked || !coverageState.message);
         if (elements.coverageBanner) {
             elements.coverageBanner.textContent = coverageState.message || '';
         }
 
-        const showSuccess = hasCoords && hasValidLocation && !blocked && coverage.isRestrictionActive();
-        elements.coverageSuccess?.classList.toggle('hidden', !showSuccess);
+        elements.mapCoverageBanner?.classList.toggle('hidden', !blocked || !coverageState.message);
+        if (elements.mapCoverageBanner) {
+            elements.mapCoverageBanner.textContent = coverageState.message || '';
+        }
+
+        const showCheckoutSuccess = hasCoords && hasValidLocation && !blocked && coverage.isRestrictionActive();
+        const showMapSuccess = hasCoords && !blocked && coverage.isRestrictionActive();
+
+        elements.coverageSuccess?.classList.toggle('hidden', !showCheckoutSuccess);
+        elements.mapCoverageSuccess?.classList.toggle('hidden', !showMapSuccess);
+
+        elements.mapConfirmButton?.toggleAttribute('disabled', blocked);
+        elements.mapConfirmButton?.classList.toggle('opacity-60', blocked);
+        elements.mapConfirmButton?.classList.toggle('pointer-events-none', blocked);
 
         if (elements.locationHint) {
             if (!hasCoords) {
@@ -171,40 +194,53 @@ export function initDeliveryLocation(config) {
         skipReverseGeocode = false,
         refreshThumbnail = true,
     } = {}) {
+        const seq = ++locationResolveSeq;
+
         updateCoordinates(latitude, longitude, placeId, { refreshThumbnail });
         showSelectedState();
         setAddressLoading(true);
 
         try {
             if (skipReverseGeocode && formattedAddress) {
+                if (seq !== locationResolveSeq) {
+                    return;
+                }
+
                 applyFormattedAddress(formattedAddress);
-                applyCoverageState(coverage.evaluate(latitude, longitude));
             } else {
                 const geocoded = await reverseGeocode(reverseGeocodeUrl, latitude, longitude);
+
+                if (seq !== locationResolveSeq) {
+                    return;
+                }
+
                 applyFormattedAddress(geocoded.formattedAddress);
                 updateAddressComponents(geocoded);
 
                 if (geocoded.placeId) {
                     elements.placeIdInput.value = geocoded.placeId;
                 }
-
-                if (geocoded.coverage) {
-                    applyCoverageState(coverage.normalize(geocoded.coverage));
-                } else {
-                    applyCoverageState(coverage.evaluate(latitude, longitude));
-                }
             }
 
+            syncCoverageForCoordinates(latitude, longitude);
             hasValidLocation = true;
         } catch (error) {
+            if (seq !== locationResolveSeq) {
+                return;
+            }
+
             hasValidLocation = Boolean(formattedAddress);
             applyFormattedAddress(formattedAddress || '');
-            applyCoverageState(coverage.evaluate(latitude, longitude));
+            syncCoverageForCoordinates(latitude, longitude);
 
             if (!formattedAddress) {
                 elements.locationHint.textContent = error.message || 'Alamat tidak dapat ditentukan. Coba geser pin di peta.';
             }
         } finally {
+            if (seq !== locationResolveSeq) {
+                return;
+            }
+
             setAddressLoading(false);
             syncCheckoutButton();
         }
@@ -263,6 +299,9 @@ export function initDeliveryLocation(config) {
         onOpen: () => {
             mapThumbnail?.hide();
         },
+        onCoordinatesPreview: ({ latitude, longitude }) => {
+            syncCoverageForCoordinates(latitude, longitude);
+        },
         onClose: () => {
             mapThumbnail?.show(
                 elements.latitudeInput.value,
@@ -283,6 +322,8 @@ export function initDeliveryLocation(config) {
                 return;
             }
 
+            const seq = ++locationResolveSeq;
+
             if (formattedAddress) {
                 applyFormattedAddress(formattedAddress);
             }
@@ -293,6 +334,11 @@ export function initDeliveryLocation(config) {
 
             try {
                 const geocoded = await reverseGeocode(reverseGeocodeUrl, latitude, longitude);
+
+                if (seq !== locationResolveSeq) {
+                    return;
+                }
+
                 applyFormattedAddress(geocoded.formattedAddress);
                 updateAddressComponents(geocoded);
 
@@ -300,11 +346,19 @@ export function initDeliveryLocation(config) {
                     elements.placeIdInput.value = geocoded.placeId;
                 }
 
-                applyCoverageState(geocoded.coverage ? coverage.normalize(geocoded.coverage) : coverage.evaluate(latitude, longitude));
+                syncCoverageForCoordinates(latitude, longitude);
                 hasValidLocation = true;
             } catch {
-                applyCoverageState(coverage.evaluate(latitude, longitude));
+                if (seq !== locationResolveSeq) {
+                    return;
+                }
+
+                syncCoverageForCoordinates(latitude, longitude);
             } finally {
+                if (seq !== locationResolveSeq) {
+                    return;
+                }
+
                 setAddressLoading(false);
                 syncCheckoutButton();
             }

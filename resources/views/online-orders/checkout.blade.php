@@ -238,6 +238,13 @@
             </div>
 
             <div class="border-t border-[#dfe3e9] bg-white p-4">
+                <div id="map-coverage-banner" class="mb-3 hidden rounded-xl border border-[#ffdad6] bg-[#fff4f2] px-4 py-3 text-xs font-semibold leading-5 text-[#93000a]"></div>
+                <div id="map-coverage-success" class="mb-3 hidden rounded-xl border border-[#8fdcb7] bg-[#e7fff2] px-4 py-3 text-xs font-semibold leading-5 text-[#005236]">
+                    <span class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                        Lokasi ini dapat dilayani.
+                    </span>
+                </div>
                 <button id="map-confirm-button" type="button" class="mb-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#001356] px-4 text-sm font-extrabold text-white active:scale-[0.98]">
                     <span class="material-symbols-outlined text-[20px]">check</span>
                     Gunakan lokasi ini

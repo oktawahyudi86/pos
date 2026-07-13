@@ -300,7 +300,7 @@ class CashierOrderController extends Controller
             'Metode pembayaran: '.$order->paymentMethodLabel(),
             'Alamat: '.$order->address,
             $order->deliveryAreaSummary() ? 'Wilayah: '.$order->deliveryAreaSummary() : null,
-            $order->address_note ? 'Patokan: '.$order->address_note : null,
+            $order->address_detail ? 'Detail: '.$order->address_detail : null,
             $order->deliveryDirectionsUrl() ? 'Navigasi Maps: '.$order->deliveryDirectionsUrl() : ($order->deliveryMapUrl() ? 'Maps: '.$order->deliveryMapUrl() : null),
             '',
             'Silakan lakukan pembayaran ke:',

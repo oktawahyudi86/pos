@@ -39,15 +39,72 @@ class ReverseGeocodingService
         $district = $this->firstNonEmpty($address, ['city_district', 'district', 'suburb', 'borough']);
         $village = $this->firstNonEmpty($address, ['village', 'hamlet', 'neighbourhood', 'quarter', 'residential']);
         $postalCode = $this->firstNonEmpty($address, ['postcode']);
+        $formattedAddress = $this->buildAddress($address, $payload['display_name'] ?? null);
 
         return [
-            'address' => $this->buildAddress($address, $payload['display_name'] ?? null),
+            'address' => $formattedAddress,
+            'formatted_address' => $formattedAddress,
             'province' => $province,
             'city' => $city,
             'district' => $district,
             'village' => $village,
+            'subdistrict' => $village,
             'postal_code' => $postalCode,
+            'place_id' => $this->buildPlaceId($payload),
         ];
+    }
+
+    public function search(string $query, int $limit = 5): array
+    {
+        $response = Http::timeout(10)
+            ->withHeaders([
+                'User-Agent' => config('app.name', 'POS-Laravel').' Geocoding Search',
+                'Accept-Language' => 'id',
+            ])
+            ->get('https://nominatim.openstreetmap.org/search', [
+                'format' => 'jsonv2',
+                'q' => $query,
+                'addressdetails' => 1,
+                'limit' => $limit,
+                'countrycodes' => 'id',
+            ]);
+
+        if (! $response->successful()) {
+            throw new RuntimeException('Geocoding search request failed.');
+        }
+
+        $results = $response->json();
+
+        if (! is_array($results)) {
+            return [];
+        }
+
+        return collect($results)
+            ->map(function (array $item) {
+                $address = is_array($item['address'] ?? null) ? $item['address'] : [];
+
+                return [
+                    'place_id' => $this->buildPlaceId($item),
+                    'formatted_address' => $this->buildAddress($address, $item['display_name'] ?? null),
+                    'latitude' => isset($item['lat']) ? (float) $item['lat'] : null,
+                    'longitude' => isset($item['lon']) ? (float) $item['lon'] : null,
+                ];
+            })
+            ->filter(fn (array $item) => $item['latitude'] !== null && $item['longitude'] !== null)
+            ->values()
+            ->all();
+    }
+
+    private function buildPlaceId(array $payload): ?string
+    {
+        $osmType = $payload['osm_type'] ?? null;
+        $osmId = $payload['osm_id'] ?? null;
+
+        if (! is_string($osmType) || $osmType === '' || $osmId === null) {
+            return null;
+        }
+
+        return 'osm:'.$osmType.':'.$osmId;
     }
 
     private function buildAddress(array $address, ?string $displayName): string

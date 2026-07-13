@@ -83,8 +83,8 @@
                             @if ($order->deliveryAreaSummary())
                                 <p class="mt-1 text-xs font-semibold text-[#454650]">{{ $order->deliveryAreaSummary() }}</p>
                             @endif
-                            @if ($order->address_note)
-                                <p class="mt-2 text-xs font-semibold text-[#767681]">Patokan: {{ $order->address_note }}</p>
+                            @if ($order->address_detail)
+                                <p class="mt-2 text-xs font-semibold text-[#767681]">Detail: {{ $order->address_detail }}</p>
                             @endif
                             @if ($order->deliveryDirectionsUrl())
                                 <a href="{{ $order->deliveryDirectionsUrl() }}" target="_blank" rel="noopener noreferrer" class="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#001356] px-4 text-sm font-extrabold text-white active:scale-[0.98]">
@@ -184,8 +184,8 @@
                             @if ($order->deliveryAreaSummary())
                                 <p class="mt-1 text-xs font-semibold text-[#454650]">{{ $order->deliveryAreaSummary() }}</p>
                             @endif
-                            @if ($order->address_note)
-                                <p class="mt-2 text-xs font-semibold text-[#767681]">Patokan: {{ $order->address_note }}</p>
+                            @if ($order->address_detail)
+                                <p class="mt-2 text-xs font-semibold text-[#767681]">Detail: {{ $order->address_detail }}</p>
                             @endif
                             <div class="mt-3 grid grid-cols-2 gap-2">
                                 @if ($order->deliveryDirectionsUrl())

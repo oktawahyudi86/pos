@@ -49,8 +49,8 @@
                             <div class="flex justify-between text-sm text-[#454650]"><span>Total</span><span class="font-extrabold text-[#001356]">{{ $formatRupiah($order->total) }}</span></div>
                             <div class="mt-2 flex justify-between gap-4 text-sm text-[#454650]"><span>Masuk</span><span class="text-right">{{ $order->placed_at?->format('d M Y, H:i') }}</span></div>
                             <p class="mt-3 text-sm text-[#454650]">{{ $order->address }}</p>
-                            @if ($order->address_note)
-                                <p class="mt-2 text-xs font-semibold text-[#767681]">Patokan: {{ $order->address_note }}</p>
+                            @if ($order->address_detail)
+                                <p class="mt-2 text-xs font-semibold text-[#767681]">Detail: {{ $order->address_detail }}</p>
                             @endif
                         </div>
 

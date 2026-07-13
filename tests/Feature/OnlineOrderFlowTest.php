@@ -26,11 +26,9 @@ class OnlineOrderFlowTest extends TestCase
             'quantity' => 2,
         ])->assertRedirect();
 
-        $response = $this->post(route('online-orders.checkout', $tenant), [
-            'customer_name' => 'Nia',
-            'wa_number' => '081234567890',
+        $response = $this->post(route('online-orders.checkout', $tenant), $this->validCheckoutPayload([
             'address' => 'Jl. Customer No. 1',
-        ]);
+        ]));
 
         $order = OnlineOrder::first();
 
@@ -165,14 +163,11 @@ class OnlineOrderFlowTest extends TestCase
         ])->assertRedirect();
 
         $response = $this->from(route('online-orders.checkout.form', $tenant))
-            ->post(route('online-orders.checkout', $tenant), [
-                'customer_name' => 'Nia',
-                'wa_number' => '081234567890',
+            ->post(route('online-orders.checkout', $tenant), $this->validCheckoutPayload([
                 'address' => 'Jl. Luar Jangkauan',
                 'delivery_latitude' => -7.7506,
                 'delivery_longitude' => 110.3695,
-                'payment_method' => 'manual_transfer',
-            ]);
+            ]));
 
         $response
             ->assertRedirect(route('online-orders.checkout.form', $tenant))
@@ -201,14 +196,11 @@ class OnlineOrderFlowTest extends TestCase
             'quantity' => 1,
         ])->assertRedirect();
 
-        $response = $this->post(route('online-orders.checkout', $tenant), [
-            'customer_name' => 'Nia',
-            'wa_number' => '081234567890',
+        $response = $this->post(route('online-orders.checkout', $tenant), $this->validCheckoutPayload([
             'address' => 'Jl. Dekat Toko',
             'delivery_latitude' => -7.7960,
             'delivery_longitude' => 110.3700,
-            'payment_method' => 'manual_transfer',
-        ]);
+        ]));
 
         $order = OnlineOrder::first();
 
@@ -225,6 +217,19 @@ class OnlineOrderFlowTest extends TestCase
         $this->get(route('online-orders.checkout.form', $tenant))->assertOk();
         $this->get(route('online-orders.track', [$tenant, 'wa_number' => $order->wa_number]))->assertOk();
         $this->actingAs($cashier)->get(route('cashier.orders.index'))->assertOk();
+    }
+
+    private function validCheckoutPayload(array $overrides = []): array
+    {
+        return array_merge([
+            'customer_name' => 'Nia',
+            'wa_number' => '081234567890',
+            'address' => 'Jl. Contoh No. 1, Yogyakarta',
+            'delivery_latitude' => -7.7960,
+            'delivery_longitude' => 110.3700,
+            'address_label' => 'rumah',
+            'payment_method' => 'manual_transfer',
+        ], $overrides);
     }
 
     private function makeCashierOrder(): array

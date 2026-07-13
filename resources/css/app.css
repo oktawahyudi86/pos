@@ -89,6 +89,133 @@
     .enable-page-skeleton.page-loaded::before {
         display: none;
     }
+
+    .animate-fade-in {
+        animation: fade-in 0.28s ease-out;
+    }
+
+    .map-picker-pin {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        z-index: 450;
+        transform: translate(-50%, -100%);
+        pointer-events: none;
+    }
+
+    .map-search-results {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        left: 0;
+        right: 0;
+        max-height: 15rem;
+        overflow-y: auto;
+        border-radius: 1rem;
+        border: 1px solid #c6c5d2;
+        background: #fff;
+        box-shadow: 0 12px 32px rgba(0, 19, 86, 0.12);
+    }
+
+    .map-search-result {
+        display: flex;
+        width: 100%;
+        align-items: flex-start;
+        gap: 0.75rem;
+        border: 0;
+        border-bottom: 1px solid #eef3ff;
+        background: #fff;
+        padding: 0.875rem 1rem;
+        text-align: left;
+        transition: background-color 0.15s ease;
+    }
+
+    .map-search-result:last-child {
+        border-bottom: 0;
+    }
+
+    .map-search-result:hover,
+    .map-search-result.is-active {
+        background: #f6faff;
+    }
+
+    .map-search-result-icon {
+        flex-shrink: 0;
+        font-size: 1.125rem;
+        color: #001356;
+    }
+
+    .map-search-result-text {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        line-height: 1.4;
+        color: #171c20;
+    }
+
+    .map-search-empty {
+        padding: 0.875rem 1rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #767681;
+    }
+
+    #map-picker-canvas {
+        z-index: 1;
+    }
+
+    .address-map-thumbnail {
+        position: relative;
+        height: 8.75rem;
+        cursor: pointer;
+        border-bottom: 1px solid #dfe3e9;
+        background: #eef3ff;
+    }
+
+    .address-map-thumbnail .leaflet-container {
+        height: 100%;
+        width: 100%;
+        background: #eef3ff;
+    }
+
+    .address-map-thumbnail-overlay {
+        position: absolute;
+        right: 0.75rem;
+        bottom: 0.75rem;
+        z-index: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        border-radius: 9999px;
+        background: rgba(0, 19, 86, 0.82);
+        padding: 0.35rem 0.65rem;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        color: #fff;
+        pointer-events: none;
+    }
+
+    .map-thumbnail-pin {
+        background: transparent;
+        border: 0;
+    }
+
+    .map-thumbnail-pin .material-symbols-outlined {
+        font-size: 2rem;
+        color: #ce2418;
+        font-variation-settings: 'FILL' 1;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes skeleton-shimmer {

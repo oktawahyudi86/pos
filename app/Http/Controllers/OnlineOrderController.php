@@ -198,13 +198,15 @@ class OnlineOrderController extends Controller
             'customer_name' => ['required', 'string', 'max:120'],
             'wa_number' => ['required', 'string', 'regex:/^[0-9]+$/', 'max:20'],
             'address' => ['required', 'string', 'max:1000'],
-            'address_note' => ['nullable', 'string', 'max:500'],
-            'delivery_latitude' => ['nullable', 'numeric', 'between:-90,90'],
-            'delivery_longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'address_detail' => ['nullable', 'string', 'max:500'],
+            'address_label' => ['required', 'string', Rule::in(['rumah', 'kantor', 'lainnya'])],
+            'delivery_latitude' => ['required', 'numeric', 'between:-90,90'],
+            'delivery_longitude' => ['required', 'numeric', 'between:-180,180'],
+            'place_id' => ['nullable', 'string', 'max:255'],
             'province' => ['nullable', 'string', 'max:120'],
             'city' => ['nullable', 'string', 'max:120'],
             'district' => ['nullable', 'string', 'max:120'],
-            'village' => ['nullable', 'string', 'max:120'],
+            'subdistrict' => ['nullable', 'string', 'max:120'],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'payment_method' => ['required', Rule::in($activePaymentMethods)],
         ]);
@@ -248,14 +250,16 @@ class OnlineOrderController extends Controller
                 'customer_name' => $validated['customer_name'],
                 'wa_number' => $validated['wa_number'],
                 'address' => $validated['address'],
-                'address_note' => $validated['address_note'] ?? null,
-                'delivery_latitude' => $validated['delivery_latitude'] ?? null,
-                'delivery_longitude' => $validated['delivery_longitude'] ?? null,
+                'address_note' => $validated['address_detail'] ?? null,
+                'delivery_latitude' => $validated['delivery_latitude'],
+                'delivery_longitude' => $validated['delivery_longitude'],
                 'delivery_province' => $validated['province'] ?? null,
                 'delivery_city' => $validated['city'] ?? null,
                 'delivery_district' => $validated['district'] ?? null,
-                'delivery_village' => $validated['village'] ?? null,
+                'delivery_village' => $validated['subdistrict'] ?? null,
                 'delivery_postal_code' => $validated['postal_code'] ?? null,
+                'delivery_place_id' => $validated['place_id'] ?? null,
+                'delivery_address_label' => $validated['address_label'],
                 'status' => 'pesanan_masuk',
                 'payment_method' => $validated['payment_method'],
                 'subtotal' => $cartSubtotal,
@@ -307,7 +311,7 @@ class OnlineOrderController extends Controller
             );
         } catch (\Throwable) {
             return response()->json([
-                'message' => 'Alamat tidak dapat ditentukan dari lokasi ini. Silakan isi alamat secara manual.',
+                'message' => 'Alamat tidak dapat ditentukan dari lokasi ini. Silakan pilih titik lain di peta.',
             ], 422);
         }
 
@@ -321,6 +325,27 @@ class OnlineOrderController extends Controller
         return response()->json([
             ...$result,
             'coverage' => $coverage,
+        ]);
+    }
+
+    public function geocodeSearch(Tenant $tenant, Request $request, ReverseGeocodingService $reverseGeocodingService): JsonResponse
+    {
+        abort_unless($tenant->isActive(), 404);
+
+        $validated = $request->validate([
+            'q' => ['required', 'string', 'min:3', 'max:200'],
+        ]);
+
+        try {
+            $results = $reverseGeocodingService->search($validated['q']);
+        } catch (\Throwable) {
+            return response()->json([
+                'message' => 'Pencarian alamat gagal. Coba lagi dalam beberapa detik.',
+            ], 422);
+        }
+
+        return response()->json([
+            'results' => $results,
         ]);
     }
 

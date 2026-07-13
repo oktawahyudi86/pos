@@ -21,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'delivery_district',
     'delivery_village',
     'delivery_postal_code',
+    'delivery_place_id',
+    'delivery_address_label',
     'status',
     'payment_method',
     'subtotal',
@@ -74,12 +76,28 @@ class OnlineOrder extends Model
     public function deliveryAreaParts(): array
     {
         return array_filter([
+            'Label' => $this->deliveryAddressLabelLabel(),
             'Provinsi' => $this->delivery_province,
             'Kota/Kab' => $this->delivery_city,
             'Kecamatan' => $this->delivery_district,
             'Kelurahan/Desa' => $this->delivery_village,
             'Kode Pos' => $this->delivery_postal_code,
         ], fn ($value) => filled($value));
+    }
+
+    public function deliveryAddressLabelLabel(): ?string
+    {
+        return match ($this->delivery_address_label) {
+            'rumah' => 'Rumah',
+            'kantor' => 'Kantor',
+            'lainnya' => 'Lainnya',
+            default => null,
+        };
+    }
+
+    public function getAddressDetailAttribute(): ?string
+    {
+        return $this->address_note;
     }
 
     public function deliveryAreaSummary(): ?string

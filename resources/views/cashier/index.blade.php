@@ -151,31 +151,31 @@ $navItems = [
                     </div>
 
                     <div class="custom-scrollbar min-h-0 flex-1 lg:overflow-y-auto lg:pr-1">
-                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                        <div class="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                             @forelse ($products as $product)
                                 <article class="group overflow-hidden rounded-xl border border-[#c6c5d2] bg-white shadow-[0_4px_12px_rgba(27,43,107,0.04)] transition hover:shadow-lg active:scale-[0.99]">
                                     <button type="button" onclick="openProductModal('product-modal-{{ $product->id }}')" class="block w-full text-left {{ $product->stock < 1 ? 'cursor-not-allowed opacity-60' : 'cursor-pointer' }}" @disabled($product->stock < 1)>
-                                        <div class="relative h-28 bg-[#dfe3e9] sm:h-36 lg:h-28 xl:h-32 2xl:h-36">
+                                        <div class="relative h-24 bg-[#dfe3e9] sm:h-36 lg:h-28 xl:h-32 2xl:h-36">
                                             @if ($product->image_path)
                                                 <img src="{{ asset('storage/'.$product->image_path) }}" alt="{{ $product->name }}" class="h-full w-full object-cover transition group-hover:scale-105">
                                             @else
                                                 <div class="flex h-full w-full items-center justify-center">
-                                                    <span class="material-symbols-outlined text-4xl text-[#767681]">restaurant</span>
+                                                    <span class="material-symbols-outlined text-3xl text-[#767681]">restaurant</span>
                                                 </div>
                                             @endif
                                             @if ($product->stock < 1)
                                                 <span class="absolute right-2 top-2 rounded bg-[#ffdad6] px-2 py-1 text-[10px] font-bold uppercase text-[#93000a]">Habis</span>
                                             @endif
                                         </div>
-                                        <div class="p-2.5 sm:p-3">
-                                            <h3 class="truncate text-xs font-bold text-[#171c20] sm:text-sm">{{ $product->name }}</h3>
-                                            <p class="mt-1 text-xs font-extrabold text-[#001356] sm:text-sm">{{ $formatRupiah($product->price) }}</p>
-                                            <div class="mt-2 flex items-center justify-between gap-2 text-[10px] text-[#454650] sm:text-xs">
+                                        <div class="space-y-1 p-2 sm:p-3">
+                                            <h3 class="line-clamp-2 min-h-[2.3rem] text-[12px] font-bold leading-4 text-[#171c20] sm:text-sm">{{ $product->name }}</h3>
+                                            <p class="text-[12px] font-extrabold leading-none text-[#001356] sm:text-sm">{{ $formatRupiah($product->price) }}</p>
+                                            <div class="flex items-center justify-between gap-2 text-[10px] text-[#454650] sm:text-xs">
                                                 <span class="truncate">{{ $product->category->name }}</span>
                                                 <span>Stok: {{ $product->stock }}</span>
                                             </div>
                                             @if ($product->variantGroups->isNotEmpty() || $product->addons->isNotEmpty())
-                                                <div class="mt-3 space-y-2 border-t border-[#dfe3e9] pt-3">
+                                                <div class="space-y-2 border-t border-[#dfe3e9] pt-2">
                                                     <div class="flex flex-wrap gap-1">
                                                     @if ($product->variantGroups->isNotEmpty())
                                                         <span class="rounded-full bg-[#eef3ff] px-2 py-1 text-[10px] font-bold text-[#001356]">Varian</span>
@@ -184,7 +184,7 @@ $navItems = [
                                                         <span class="rounded-full bg-[#e7fff2] px-2 py-1 text-[10px] font-bold text-[#005236]">Add-on</span>
                                                     @endif
                                                     </div>
-                                                    <p class="line-clamp-2 text-[11px] leading-4 text-[#454650]">
+                                                    <p class="line-clamp-2 text-[10px] leading-4 text-[#454650]">
                                                         {{ $product->variantGroups->pluck('name')->merge($product->addons->pluck('name'))->join(', ') }}
                                                     </p>
                                                 </div>

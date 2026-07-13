@@ -1,5 +1,9 @@
 @php
     $formatRupiah = fn ($value) => 'Rp '.number_format($value, 0, ',', '.');
+    $defaultPaymentMethod = old('payment_method', $onlinePaymentMethods[0] ?? 'manual_transfer');
+    $qrisImageUrl = ! empty($paymentInfo['qris_image_path']) && \Illuminate\Support\Facades\Storage::disk('public')->exists($paymentInfo['qris_image_path'])
+        ? \Illuminate\Support\Facades\Storage::url($paymentInfo['qris_image_path'])
+        : null;
 @endphp
 
 <x-online-layout :tenant="$tenant" title="Checkout" active="cart">
@@ -111,10 +115,48 @@
             </div>
 
             <div class="rounded-xl border border-dashed border-[#c6c5d2] p-4">
-                <p class="text-xs font-bold uppercase tracking-widest text-[#767681]">Pembayaran Manual</p>
-                <p class="mt-2 text-sm font-bold text-[#001356]">{{ $paymentInfo['bank_name'] }}</p>
-                <p class="text-lg font-extrabold text-[#171c20]">{{ $paymentInfo['account_number'] }}</p>
-                <p class="text-sm text-[#454650]">{{ $paymentInfo['account_name'] }}</p>
+                <p class="text-xs font-bold uppercase tracking-widest text-[#767681]">Metode Pembayaran</p>
+
+                @if (count($onlinePaymentMethods) > 1)
+                    <div class="mt-3 grid grid-cols-2 gap-2">
+                        @if (in_array('manual_transfer', $onlinePaymentMethods, true))
+                            <label class="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 text-sm font-extrabold transition has-[:checked]:border-[#001356] has-[:checked]:bg-[#eef3ff] has-[:checked]:text-[#001356]">
+                                <input type="radio" name="payment_method" value="manual_transfer" @checked($defaultPaymentMethod === 'manual_transfer') class="sr-only" onchange="toggleOnlinePaymentMethod()">
+                                <span class="material-symbols-outlined text-[18px]">account_balance</span>
+                                Transfer Bank
+                            </label>
+                        @endif
+                        @if (in_array('qris', $onlinePaymentMethods, true))
+                            <label class="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 text-sm font-extrabold transition has-[:checked]:border-[#001356] has-[:checked]:bg-[#eef3ff] has-[:checked]:text-[#001356]">
+                                <input type="radio" name="payment_method" value="qris" @checked($defaultPaymentMethod === 'qris') class="sr-only" onchange="toggleOnlinePaymentMethod()">
+                                <span class="material-symbols-outlined text-[18px]">qr_code_2</span>
+                                QRIS
+                            </label>
+                        @endif
+                    </div>
+                @else
+                    <input type="hidden" name="payment_method" value="{{ $onlinePaymentMethods[0] ?? 'manual_transfer' }}">
+                @endif
+
+                <div id="payment-transfer-panel" class="mt-4 rounded-xl border border-dashed border-[#c6c5d2] bg-[#f6faff] p-4 {{ $defaultPaymentMethod === 'manual_transfer' ? '' : 'hidden' }}">
+                    <p class="text-sm font-bold text-[#001356]">{{ $paymentInfo['bank_name'] }}</p>
+                    <p class="text-lg font-extrabold text-[#171c20]">{{ $paymentInfo['account_number'] }}</p>
+                    <p class="text-sm text-[#454650]">{{ $paymentInfo['account_name'] }}</p>
+                </div>
+
+                <div id="payment-qris-panel" class="mt-4 rounded-xl border border-dashed border-[#c6c5d2] bg-[#f6faff] p-3 text-center {{ $defaultPaymentMethod === 'qris' ? '' : 'hidden' }}">
+                    @if ($qrisImageUrl)
+                        <div class="overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ $qrisImageUrl }}" alt="QRIS {{ $paymentInfo['qris_merchant_name'] ?? '' }}" class="block w-full h-auto">
+                        </div>
+                    @else
+                        <div class="mx-auto flex h-28 w-28 items-center justify-center rounded-2xl bg-white text-[#001356] shadow-sm">
+                            <span class="material-symbols-outlined text-[72px]">qr_code_2</span>
+                        </div>
+                    @endif
+                    <p class="mt-3 text-sm font-bold text-[#171c20]">{{ $paymentInfo['qris_merchant_name'] ?: 'Scan QRIS untuk membayar' }}</p>
+                    <p class="mt-1 text-xs text-[#454650]">Tunjukkan bukti pembayaran ke kasir setelah transfer.</p>
+                </div>
             </div>
 
             <button class="w-full rounded-xl bg-[#001356] px-4 py-4 text-sm font-extrabold text-white shadow-sm {{ $cart->isEmpty() ? 'pointer-events-none opacity-60' : '' }}">Buat Pesanan</button>
@@ -268,6 +310,17 @@
 
         waNumberInput?.addEventListener('input', sanitizePhoneNumber);
 
+        function toggleOnlinePaymentMethod() {
+            const selected = document.querySelector('input[name="payment_method"]:checked')?.value
+                || document.querySelector('input[name="payment_method"]')?.value
+                || 'manual_transfer';
+            const transferPanel = document.getElementById('payment-transfer-panel');
+            const qrisPanel = document.getElementById('payment-qris-panel');
+
+            transferPanel?.classList.toggle('hidden', selected !== 'manual_transfer');
+            qrisPanel?.classList.toggle('hidden', selected !== 'qris');
+        }
+
         addressInput?.addEventListener('input', () => {
             addressManuallyEdited = true;
         });
@@ -285,5 +338,7 @@
         } else {
             window.addEventListener('load', () => setTimeout(() => detectLocation(), 600));
         }
+
+        toggleOnlinePaymentMethod();
     </script>
 </x-online-layout>

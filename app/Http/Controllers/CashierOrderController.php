@@ -33,12 +33,22 @@ class CashierOrderController extends Controller
 
         $orders = OnlineOrder::query()
             ->where('tenant_id', $tenantId)
-            ->with(['items', 'statusLogs.changer'])
+            ->with(['items', 'statusLogs.changer', 'tenant'])
             ->when($activeStatus !== '', fn ($query) => $query->where('status', $activeStatus))
             ->latest('placed_at')
             ->get();
 
-        return view('cashier.orders.index', compact('orders', 'counts', 'statuses', 'activeStatus'));
+        $paymentReminders = $orders
+            ->filter(fn (OnlineOrder $order) => $order->status === OnlineOrder::STATUS_PESANAN_MASUK)
+            ->mapWithKeys(fn (OnlineOrder $order) => [
+                $order->id => [
+                    'message' => $this->makePaymentReminderMessage($order),
+                    'url' => $this->makePaymentReminderUrl($order),
+                    'action' => route('cashier.orders.payment-reminder', $order),
+                ],
+            ]);
+
+        return view('cashier.orders.index', compact('orders', 'counts', 'statuses', 'activeStatus', 'paymentReminders'));
     }
 
     public function paymentReminder(OnlineOrder $order): RedirectResponse
@@ -60,8 +70,8 @@ class CashierOrderController extends Controller
         $order->refresh()->loadMissing('items');
 
         return back()
-            ->with('status', 'Reminder pembayaran siap dikirim dan stok sudah dikurangi.')
-            ->with('whatsapp_url', $this->makePaymentReminderUrl($order));
+            ->with('status', 'Konfirmasi pembayaran tercatat dan stok sudah dikurangi.')
+            ->with('open_order_detail', $order->id);
     }
 
     public function process(OnlineOrder $order): RedirectResponse
@@ -70,7 +80,9 @@ class CashierOrderController extends Controller
         abort_unless($order->status === OnlineOrder::STATUS_KONFIRMASI_PEMBAYARAN, 422, 'Status pesanan tidak valid.');
         $this->transition($order, OnlineOrder::STATUS_SEDANG_DIPROSES);
 
-        return back()->with('status', 'Pesanan mulai diproses.');
+        return back()
+            ->with('status', 'Pesanan mulai diproses.')
+            ->with('open_order_detail', $order->id);
     }
 
     public function ship(OnlineOrder $order): RedirectResponse
@@ -79,7 +91,9 @@ class CashierOrderController extends Controller
         abort_unless($order->status === OnlineOrder::STATUS_SEDANG_DIPROSES, 422, 'Status pesanan tidak valid.');
         $this->transition($order, OnlineOrder::STATUS_DIKIRIM);
 
-        return back()->with('status', 'Pesanan masuk tahap dikirim.');
+        return back()
+            ->with('status', 'Pesanan masuk tahap dikirim.')
+            ->with('open_order_detail', $order->id);
     }
 
     public function finish(OnlineOrder $order): RedirectResponse
@@ -255,20 +269,25 @@ class CashierOrderController extends Controller
         ], true);
     }
 
-    private function makePaymentReminderUrl(OnlineOrder $order): string
+    private function makePaymentReminderMessage(OnlineOrder $order): string
     {
         $paymentInfo = Setting::getValue('online_payment', [
+            'methods' => [
+                'transfer_bank' => true,
+                'qris' => true,
+            ],
             'bank_name' => 'Mandiri',
             'account_number' => '1234567890',
             'account_name' => $order->tenant?->name ?? config('app.name', 'Keijora POS'),
-            'qris_text' => 'QRIS akan ditampilkan oleh kasir.',
+            'qris_merchant_name' => '',
+            'cashier_wa_number' => '',
         ], $order->tenant_id);
 
         $items = $order->items
             ->map(fn ($item) => "- {$item->quantity}x {$item->product_name} ({$this->formatRupiah($item->line_total)})")
             ->join("\n");
 
-        $message = implode("\n", array_filter([
+        return implode("\n", array_filter([
             "Halo {$order->customer_name}, pesanan {$order->order_number} sudah kami terima.",
             '',
             'Ringkasan pesanan:',
@@ -278,20 +297,27 @@ class CashierOrderController extends Controller
             'Ongkir: '.$this->formatRupiah($order->shipping_cost),
             'Total: '.$this->formatRupiah($order->total),
             '',
+            'Metode pembayaran: '.$order->paymentMethodLabel(),
             'Alamat: '.$order->address,
             $order->deliveryAreaSummary() ? 'Wilayah: '.$order->deliveryAreaSummary() : null,
             $order->address_note ? 'Patokan: '.$order->address_note : null,
             $order->deliveryDirectionsUrl() ? 'Navigasi Maps: '.$order->deliveryDirectionsUrl() : ($order->deliveryMapUrl() ? 'Maps: '.$order->deliveryMapUrl() : null),
             '',
             'Silakan lakukan pembayaran ke:',
-            ($paymentInfo['bank_name'] ?? 'Bank')." - ".($paymentInfo['account_number'] ?? '-'),
-            'a.n. '.($paymentInfo['account_name'] ?? '-'),
-            $paymentInfo['qris_text'] ?? null,
+            $order->payment_method === 'qris'
+                ? 'QRIS'.($paymentInfo['qris_merchant_name'] ? ' - '.$paymentInfo['qris_merchant_name'] : '')
+                : ($paymentInfo['bank_name'] ?? 'Bank').' - '.($paymentInfo['account_number'] ?? '-'),
+            $order->payment_method === 'qris'
+                ? null
+                : 'a.n. '.($paymentInfo['account_name'] ?? '-'),
             '',
             'Setelah transfer, balas pesan ini dengan bukti pembayaran ya. Terima kasih.',
         ], fn ($line) => $line !== null));
+    }
 
-        return 'https://wa.me/'.$this->normalizeWhatsappNumber($order->wa_number).'?text='.rawurlencode($message);
+    private function makePaymentReminderUrl(OnlineOrder $order): string
+    {
+        return 'https://wa.me/'.$this->normalizeWhatsappNumber($order->wa_number).'?text='.rawurlencode($this->makePaymentReminderMessage($order));
     }
 
     private function normalizeWhatsappNumber(string $number): string

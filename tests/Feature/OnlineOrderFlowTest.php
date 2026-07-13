@@ -46,7 +46,7 @@ class OnlineOrderFlowTest extends TestCase
         $this->actingAs($cashier)
             ->patch(route('cashier.orders.payment-reminder', $order))
             ->assertRedirect()
-            ->assertSessionHas('whatsapp_url');
+            ->assertSessionHas('open_order_detail', $order->id);
 
         $this->assertSame(7, $product->refresh()->stock);
         $this->assertSame(OnlineOrder::STATUS_KONFIRMASI_PEMBAYARAN, $order->refresh()->status);

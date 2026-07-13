@@ -123,14 +123,10 @@
                         @endif
 
                         @if ($order->status === \App\Models\OnlineOrder::STATUS_PESANAN_MASUK)
-                            <form method="POST" action="{{ route('cashier.orders.payment-reminder', $order) }}" class="{{ $canCancel($order) ? 'col-span-1' : 'col-span-2' }}">
-                                @csrf
-                                @method('PATCH')
-                                <button class="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#001356] px-3 text-sm font-extrabold text-white active:scale-[0.98] xl:min-h-10">
-                                    <span class="material-symbols-outlined text-[18px]">send</span>
-                                    Send
-                                </button>
-                            </form>
+                            <button type="button" onclick="openWhatsappConfirm({{ $order->id }})" class="{{ $canCancel($order) ? 'col-span-1' : 'col-span-2' }} inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#001356] px-3 text-sm font-extrabold text-white active:scale-[0.98] xl:min-h-10">
+                                <span class="material-symbols-outlined text-[18px]">send</span>
+                                Send
+                            </button>
                         @endif
                     </div>
                 </article>
@@ -145,141 +141,156 @@
     </section>
 
     @foreach ($orders as $order)
+        @php
+            $workflowSteps = [
+                ['key' => 'wa', 'label' => 'WA', 'done' => ! in_array($order->status, [\App\Models\OnlineOrder::STATUS_PESANAN_MASUK], true)],
+                ['key' => 'proses', 'label' => 'Proses', 'done' => in_array($order->status, [\App\Models\OnlineOrder::STATUS_SEDANG_DIPROSES, \App\Models\OnlineOrder::STATUS_DIKIRIM, \App\Models\OnlineOrder::STATUS_SELESAI], true)],
+                ['key' => 'pengantaran', 'label' => 'Antar', 'done' => in_array($order->status, [\App\Models\OnlineOrder::STATUS_DIKIRIM, \App\Models\OnlineOrder::STATUS_SELESAI], true)],
+                ['key' => 'selesai', 'label' => 'Selesai', 'done' => $order->status === \App\Models\OnlineOrder::STATUS_SELESAI],
+            ];
+            $currentStepIndex = match ($order->status) {
+                \App\Models\OnlineOrder::STATUS_PESANAN_MASUK => 0,
+                \App\Models\OnlineOrder::STATUS_KONFIRMASI_PEMBAYARAN => 1,
+                \App\Models\OnlineOrder::STATUS_SEDANG_DIPROSES => 2,
+                \App\Models\OnlineOrder::STATUS_DIKIRIM => 3,
+                \App\Models\OnlineOrder::STATUS_SELESAI => 4,
+                default => -1,
+            };
+        @endphp
         <div id="order-detail-{{ $order->id }}" class="fixed inset-0 z-[90] hidden items-end justify-center bg-[#171c20]/50 p-0 sm:items-center sm:p-4" onclick="closeOrderDetail('order-detail-{{ $order->id }}')">
-            <section class="flex max-h-[94dvh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:max-h-[92dvh] sm:rounded-2xl" onclick="event.stopPropagation()">
-                <div class="flex items-start justify-between gap-4 border-b border-[#dfe3e9] p-5">
-                    <div class="min-w-0">
-                        <p class="truncate text-xs font-bold uppercase tracking-widest text-[#767681]">{{ $order->order_number }}</p>
-                        <h3 class="mt-1 text-xl font-extrabold text-[#001356]">{{ $order->customer_name }}</h3>
-                        <p class="mt-1 text-sm text-[#454650]">{{ $order->wa_number }} · {{ $order->placed_at?->format('d M Y, H:i') }}</p>
+            <section class="flex h-[min(92dvh,680px)] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl" onclick="event.stopPropagation()">
+                <div class="shrink-0 border-b border-[#dfe3e9] px-4 py-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="truncate text-[11px] font-bold uppercase tracking-widest text-[#767681]">{{ $order->order_number }}</p>
+                            <h3 class="mt-1 truncate text-lg font-extrabold text-[#001356]">{{ $order->customer_name }}</h3>
+                            <p class="mt-1 text-xs text-[#454650]">{{ $order->wa_number }} · {{ $order->placed_at?->format('d M Y, H:i') }}</p>
+                        </div>
+                        <button type="button" onclick="closeOrderDetail('order-detail-{{ $order->id }}')" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#454650] hover:bg-[#f6faff] active:scale-[0.98]">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
                     </div>
-                    <button type="button" onclick="closeOrderDetail('order-detail-{{ $order->id }}')" class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[#454650] hover:bg-[#f6faff] active:scale-[0.98]">
-                        <span class="material-symbols-outlined">close</span>
-                    </button>
+                    <div class="mt-3 flex items-center justify-between gap-2">
+                        <span class="inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold {{ $order->statusBadgeClass() }}">{{ $order->statusLabel() }}</span>
+                        <p class="text-base font-extrabold text-[#001356]">{{ $formatRupiah($order->total) }}</p>
+                    </div>
                 </div>
 
-                <div class="flex-1 overflow-y-auto p-5">
-                    <div class="space-y-4">
-                        <div class="rounded-xl bg-[#f6faff] p-4">
-                            <p class="text-xs font-bold uppercase tracking-widest text-[#767681]">Lokasi Pengantaran</p>
-                            <p class="mt-2 text-sm leading-6 text-[#171c20]">{{ $order->address }}</p>
-
-                            @if ($order->deliveryAreaParts())
-                                <div class="mt-3 grid gap-2 sm:grid-cols-2">
-                                    @foreach ($order->deliveryAreaParts() as $label => $value)
-                                        <div class="rounded-lg bg-white px-3 py-2">
-                                            <p class="text-[11px] font-bold uppercase tracking-widest text-[#767681]">{{ $label }}</p>
-                                            <p class="mt-1 text-sm font-semibold text-[#171c20]">{{ $value }}</p>
-                                        </div>
-                                    @endforeach
-                                </div>
+                <div class="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+                    <div class="space-y-3">
+                        <div class="rounded-xl bg-[#f6faff] p-3">
+                            <p class="text-[11px] font-bold uppercase tracking-widest text-[#767681]">Lokasi Pengantaran</p>
+                            <p class="mt-1.5 text-sm leading-5 text-[#171c20]">{{ $order->address }}</p>
+                            @if ($order->deliveryAreaSummary())
+                                <p class="mt-1 text-xs font-semibold text-[#454650]">{{ $order->deliveryAreaSummary() }}</p>
                             @endif
-
                             @if ($order->address_note)
-                                <div class="mt-3 rounded-lg bg-white px-3 py-2">
-                                    <p class="text-[11px] font-bold uppercase tracking-widest text-[#767681]">Patokan</p>
-                                    <p class="mt-1 text-sm leading-5 text-[#171c20]">{{ $order->address_note }}</p>
-                                </div>
+                                <p class="mt-2 text-xs font-semibold text-[#767681]">Patokan: {{ $order->address_note }}</p>
                             @endif
-
-                            @if ($order->delivery_latitude && $order->delivery_longitude)
-                                <p class="mt-3 text-xs font-semibold text-[#454650]">
-                                    Koordinat: {{ $order->delivery_latitude }}, {{ $order->delivery_longitude }}
-                                </p>
-                            @endif
-
-                            <div class="mt-4 grid gap-2 sm:grid-cols-2">
+                            <div class="mt-3 grid grid-cols-2 gap-2">
                                 @if ($order->deliveryDirectionsUrl())
-                                    <a href="{{ $order->deliveryDirectionsUrl() }}" target="_blank" rel="noopener noreferrer" class="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#001356] px-4 text-sm font-extrabold text-white active:scale-[0.98]">
-                                        <span class="material-symbols-outlined text-[20px]">navigation</span>
-                                        Navigasi Maps
+                                    <a href="{{ $order->deliveryDirectionsUrl() }}" target="_blank" rel="noopener noreferrer" class="flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-[#001356] px-2 text-xs font-extrabold text-white active:scale-[0.98]">
+                                        <span class="material-symbols-outlined text-[18px]">navigation</span>
+                                        Navigasi
                                     </a>
                                 @endif
                                 @if ($order->deliveryMapUrl())
-                                    <a href="{{ $order->deliveryMapUrl() }}" target="_blank" rel="noopener noreferrer" class="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#001356] bg-white px-4 text-sm font-extrabold text-[#001356] active:scale-[0.98]">
-                                        <span class="material-symbols-outlined text-[20px]">map</span>
-                                        Buka Titik
+                                    <a href="{{ $order->deliveryMapUrl() }}" target="_blank" rel="noopener noreferrer" class="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-[#001356] bg-white px-2 text-xs font-extrabold text-[#001356] active:scale-[0.98]">
+                                        <span class="material-symbols-outlined text-[18px]">map</span>
+                                        Titik
                                     </a>
                                 @endif
-                                <a href="{{ $order->customerWhatsappUrl() }}" target="_blank" rel="noopener noreferrer" class="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#8fdcb7] bg-[#e7fff2] px-4 text-sm font-extrabold text-[#005236] active:scale-[0.98] sm:col-span-2">
-                                    <span class="material-symbols-outlined text-[20px]">chat</span>
-                                    Hubungi via WhatsApp
-                                </a>
                             </div>
                         </div>
 
-                        <div class="grid gap-4 lg:grid-cols-[1fr_260px]">
-                            <div class="rounded-xl border border-[#dfe3e9] p-4">
-                                <p class="text-xs font-bold uppercase tracking-widest text-[#767681]">Item</p>
-                                <div class="mt-3 space-y-3">
-                                    @foreach ($order->items as $item)
-                                        <div class="flex justify-between gap-3 text-sm">
-                                            <div class="min-w-0">
-                                                <p class="font-bold text-[#171c20]">{{ $item->quantity }}x {{ $item->product_name }}</p>
-                                                <p class="text-xs text-[#454650]">
-                                                    {{ collect($item->variant_payload)->pluck('name')->merge(collect($item->addon_payload)->pluck('name'))->filter()->join(', ') ?: 'Tanpa varian' }}
-                                                </p>
-                                                @if ($item->note)
-                                                    <p class="text-xs font-semibold text-[#767681]">Catatan: {{ $item->note }}</p>
-                                                @endif
-                                            </div>
-                                            <p class="shrink-0 font-extrabold text-[#001356]">{{ $formatRupiah($item->line_total) }}</p>
+                        <div class="rounded-xl border border-[#dfe3e9] p-3">
+                            <p class="text-[11px] font-bold uppercase tracking-widest text-[#767681]">Item Pesanan</p>
+                            <div class="mt-2 space-y-2">
+                                @foreach ($order->items as $item)
+                                    <div class="flex justify-between gap-2 text-sm">
+                                        <p class="min-w-0 font-bold text-[#171c20]">{{ $item->quantity }}x {{ $item->product_name }}</p>
+                                        <p class="shrink-0 font-extrabold text-[#001356]">{{ $formatRupiah($item->line_total) }}</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                            <div class="mt-3 space-y-1 border-t border-[#dfe3e9] pt-2 text-xs text-[#454650]">
+                                <div class="flex justify-between"><span>Subtotal</span><span>{{ $formatRupiah($order->subtotal) }}</span></div>
+                                <div class="flex justify-between"><span>Ongkir</span><span>{{ $formatRupiah($order->shipping_cost) }}</span></div>
+                            </div>
+                        </div>
+
+                        @if ($order->statusLogs->isNotEmpty())
+                            <details class="rounded-xl border border-[#dfe3e9] p-3">
+                                <summary class="cursor-pointer text-[11px] font-bold uppercase tracking-widest text-[#767681]">Riwayat Status</summary>
+                                <div class="mt-2 space-y-2">
+                                    @foreach ($order->statusLogs->sortByDesc('changed_at')->take(4) as $log)
+                                        <div>
+                                            <p class="text-sm font-bold text-[#171c20]">{{ $labels[$log->status] ?? str($log->status)->replace('_', ' ')->title() }}</p>
+                                            <p class="text-xs text-[#454650]">{{ $log->changed_at?->format('d M Y, H:i') }}</p>
                                         </div>
                                     @endforeach
                                 </div>
-                            </div>
-
-                            <aside class="space-y-4">
-                                <div class="rounded-xl border border-[#dfe3e9] p-4">
-                                    <p class="text-xs font-bold uppercase tracking-widest text-[#767681]">Status</p>
-                                    <span class="mt-3 inline-flex rounded-full border px-3 py-1 text-[11px] font-bold {{ $order->statusBadgeClass() }}">{{ $order->statusLabel() }}</span>
-                                    <div class="mt-4 space-y-2 text-sm">
-                                        <div class="flex justify-between text-[#454650]"><span>Subtotal</span><span>{{ $formatRupiah($order->subtotal) }}</span></div>
-                                        <div class="flex justify-between text-[#454650]"><span>Ongkir</span><span>{{ $formatRupiah($order->shipping_cost) }}</span></div>
-                                        <div class="flex justify-between border-t border-[#dfe3e9] pt-2 font-extrabold text-[#001356]"><span>Total</span><span>{{ $formatRupiah($order->total) }}</span></div>
-                                    </div>
-                                </div>
-
-                                <div class="rounded-xl border border-[#dfe3e9] p-4">
-                                    <p class="text-xs font-bold uppercase tracking-widest text-[#767681]">Riwayat</p>
-                                    <div class="mt-3 space-y-3">
-                                        @foreach ($order->statusLogs->sortByDesc('changed_at')->take(6) as $log)
-                                            <div>
-                                                <p class="text-sm font-bold text-[#171c20]">{{ $labels[$log->status] ?? str($log->status)->replace('_', ' ')->title() }}</p>
-                                                <p class="text-xs text-[#454650]">{{ $log->changed_at?->format('d M Y, H:i') }}{{ $log->changer ? ' oleh '.$log->changer->name : '' }}</p>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </aside>
-                        </div>
+                            </details>
+                        @endif
                     </div>
                 </div>
 
-                @if (in_array($order->status, [
-                    \App\Models\OnlineOrder::STATUS_KONFIRMASI_PEMBAYARAN,
-                    \App\Models\OnlineOrder::STATUS_SEDANG_DIPROSES,
-                    \App\Models\OnlineOrder::STATUS_DIKIRIM,
-                ], true))
-                    <div class="border-t border-[#dfe3e9] bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-                        @if ($order->status === \App\Models\OnlineOrder::STATUS_KONFIRMASI_PEMBAYARAN)
+                @if ($currentStepIndex >= 0 && $order->status !== \App\Models\OnlineOrder::STATUS_DIBATALKAN)
+                    <div class="shrink-0 border-t border-[#dfe3e9] bg-white px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+                        <div class="mb-3 grid grid-cols-4 gap-1">
+                            @foreach ($workflowSteps as $index => $step)
+                                <div class="text-center">
+                                    <div class="mx-auto flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-extrabold {{ $step['done'] ? 'bg-[#001356] text-white' : ($index === $currentStepIndex ? 'border-2 border-[#001356] bg-[#eef3ff] text-[#001356]' : 'border border-[#c6c5d2] bg-white text-[#767681]') }}">
+                                        {{ $index + 1 }}
+                                    </div>
+                                    <p class="mt-1 text-[9px] font-bold uppercase tracking-wide {{ $step['done'] || $index === $currentStepIndex ? 'text-[#001356]' : 'text-[#767681]' }}">{{ $step['label'] }}</p>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        @if ($order->status === \App\Models\OnlineOrder::STATUS_PESANAN_MASUK)
+                            <button type="button" onclick="openWhatsappConfirm({{ $order->id }})" class="flex w-full min-h-14 items-center justify-center gap-2 rounded-xl bg-[#001356] px-4 text-sm font-extrabold text-white active:scale-[0.98]">
+                                <span class="material-symbols-outlined text-[20px]">chat</span>
+                                Selanjutnya: Kirim Konfirmasi WA
+                            </button>
+                        @elseif ($order->status === \App\Models\OnlineOrder::STATUS_KONFIRMASI_PEMBAYARAN)
                             <form method="POST" action="{{ route('cashier.orders.process', $order) }}">
                                 @csrf
                                 @method('PATCH')
-                                <button class="w-full min-h-14 rounded-xl bg-[#001356] px-4 text-sm font-extrabold text-white active:scale-[0.98]">Mulai Proses</button>
+                                <button class="flex w-full min-h-14 items-center justify-center gap-2 rounded-xl bg-[#001356] px-4 text-sm font-extrabold text-white active:scale-[0.98]">
+                                    <span class="material-symbols-outlined text-[20px]">play_arrow</span>
+                                    Selanjutnya: Mulai Proses
+                                </button>
                             </form>
                         @elseif ($order->status === \App\Models\OnlineOrder::STATUS_SEDANG_DIPROSES)
                             <form method="POST" action="{{ route('cashier.orders.ship', $order) }}">
                                 @csrf
                                 @method('PATCH')
-                                <button class="w-full min-h-14 rounded-xl bg-[#001356] px-4 text-sm font-extrabold text-white active:scale-[0.98]">Kirim Pesanan</button>
+                                <button class="flex w-full min-h-14 items-center justify-center gap-2 rounded-xl bg-[#001356] px-4 text-sm font-extrabold text-white active:scale-[0.98]">
+                                    <span class="material-symbols-outlined text-[20px]">local_shipping</span>
+                                    Selanjutnya: Mulai Pengantaran
+                                </button>
                             </form>
                         @elseif ($order->status === \App\Models\OnlineOrder::STATUS_DIKIRIM)
                             <form method="POST" action="{{ route('cashier.orders.finish', $order) }}">
                                 @csrf
                                 @method('PATCH')
-                                <button class="w-full min-h-14 rounded-xl bg-[#001356] px-4 text-sm font-extrabold text-white active:scale-[0.98]">Selesaikan</button>
+                                <button class="flex w-full min-h-14 items-center justify-center gap-2 rounded-xl bg-[#001356] px-4 text-sm font-extrabold text-white active:scale-[0.98]">
+                                    <span class="material-symbols-outlined text-[20px]">check_circle</span>
+                                    Selanjutnya: Selesaikan Pesanan
+                                </button>
                             </form>
+                        @elseif ($order->status === \App\Models\OnlineOrder::STATUS_SELESAI)
+                            <div class="flex min-h-14 items-center justify-center gap-2 rounded-xl border border-[#8fdcb7] bg-[#e7fff2] px-4 text-sm font-extrabold text-[#005236]">
+                                <span class="material-symbols-outlined text-[20px]">task_alt</span>
+                                Pesanan Selesai
+                            </div>
+                        @endif
+
+                        @if ($order->status === \App\Models\OnlineOrder::STATUS_KONFIRMASI_PEMBAYARAN)
+                            <a href="{{ $order->customerWhatsappUrl() }}" target="_blank" rel="noopener noreferrer" class="mt-2 flex min-h-11 w-full items-center justify-center gap-2 text-xs font-bold text-[#454650] underline-offset-2 hover:underline">
+                                Buka chat WhatsApp lagi
+                            </a>
                         @endif
                     </div>
                 @endif
@@ -287,21 +298,122 @@
         </div>
     @endforeach
 
-    @if (session('whatsapp_url'))
+    <div id="whatsapp-confirm-modal" class="fixed inset-0 z-[100] hidden items-end justify-center bg-[#171c20]/60 p-0 sm:items-center sm:p-4" onclick="closeWhatsappConfirm()">
+        <section class="flex h-[min(88dvh,560px)] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl" onclick="event.stopPropagation()">
+            <div class="shrink-0 border-b border-[#dfe3e9] px-4 py-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-widest text-[#767681]">Konfirmasi WhatsApp</p>
+                        <h3 class="mt-1 text-lg font-extrabold text-[#001356]">Kirim pesan ke customer</h3>
+                        <p class="mt-1 text-xs leading-5 text-[#454650]">Status pesanan baru berubah setelah Anda konfirmasi pengiriman.</p>
+                    </div>
+                    <button type="button" onclick="closeWhatsappConfirm()" class="flex h-10 w-10 items-center justify-center rounded-full text-[#454650] hover:bg-[#f6faff]">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+                <label class="mb-2 block text-[11px] font-bold uppercase tracking-widest text-[#767681]">Preview pesan</label>
+                <textarea id="wa-preview-message" readonly rows="12" class="w-full resize-none rounded-xl border border-[#c6c5d2] bg-[#f6faff] px-3 py-3 text-sm leading-6 text-[#171c20]"></textarea>
+                <p id="wa-copy-status" class="mt-2 hidden text-xs font-semibold text-[#005236]">Pesan berhasil disalin.</p>
+            </div>
+
+            <div class="shrink-0 space-y-2 border-t border-[#dfe3e9] bg-white px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+                <form id="wa-confirm-form" method="POST" action="#">
+                    @csrf
+                    @method('PATCH')
+                </form>
+
+                <button type="button" onclick="copyWhatsappMessage()" class="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#c6c5d2] bg-white px-4 text-sm font-extrabold text-[#454650] active:scale-[0.98]">
+                    <span class="material-symbols-outlined text-[20px]">content_copy</span>
+                    Salin Pesan
+                </button>
+
+                <button type="button" onclick="confirmWhatsappReminder(true)" class="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#001356] px-4 text-sm font-extrabold text-white active:scale-[0.98]">
+                    <span class="material-symbols-outlined text-[20px]">chat</span>
+                    Konfirmasi &amp; Buka WhatsApp
+                </button>
+
+                <button type="button" onclick="confirmWhatsappReminder(false)" class="flex min-h-11 w-full items-center justify-center gap-2 text-xs font-bold text-[#454650] underline-offset-2 hover:underline">
+                    WhatsApp terblokir? Konfirmasi tanpa buka WA
+                </button>
+            </div>
+        </section>
+    </div>
+
+    @if (session('open_order_detail'))
         <script>
             window.addEventListener('load', () => {
-                window.open(@json(session('whatsapp_url')), '_blank', 'noopener,noreferrer');
+                openOrderDetail('order-detail-{{ session('open_order_detail') }}');
             });
         </script>
     @endif
 
     <script>
+        const paymentReminders = @json($paymentReminders);
+        let activeWhatsappReminder = null;
+
+        function openWhatsappConfirm(orderId) {
+            const reminder = paymentReminders[orderId];
+            if (!reminder) return;
+
+            activeWhatsappReminder = reminder;
+            document.getElementById('wa-preview-message').value = reminder.message;
+            document.getElementById('wa-confirm-form').action = reminder.action;
+            document.getElementById('wa-copy-status').classList.add('hidden');
+
+            const modal = document.getElementById('whatsapp-confirm-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeWhatsappConfirm() {
+            const modal = document.getElementById('whatsapp-confirm-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            activeWhatsappReminder = null;
+
+            if (!document.querySelector('[id^="order-detail-"].flex')) {
+                document.body.classList.remove('overflow-hidden');
+            }
+        }
+
+        async function copyWhatsappMessage() {
+            const message = document.getElementById('wa-preview-message').value;
+            if (!message) return;
+
+            try {
+                await navigator.clipboard.writeText(message);
+            } catch (error) {
+                const textarea = document.getElementById('wa-preview-message');
+                textarea.focus();
+                textarea.select();
+                document.execCommand('copy');
+            }
+
+            const status = document.getElementById('wa-copy-status');
+            status.textContent = 'Pesan berhasil disalin. Tempel manual di WhatsApp jika popup diblokir.';
+            status.classList.remove('hidden');
+        }
+
+        function confirmWhatsappReminder(openWhatsapp) {
+            if (!activeWhatsappReminder) return;
+
+            if (openWhatsapp) {
+                window.open(activeWhatsappReminder.url, '_blank', 'noopener,noreferrer');
+            }
+
+            document.getElementById('wa-confirm-form').submit();
+        }
+
         function openOrderDetail(id) {
             const modal = document.getElementById(id);
             if (!modal) return;
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-            document.body.classList.add('modal-open');
+            document.body.classList.add('overflow-hidden');
         }
 
         function closeOrderDetail(id) {
@@ -309,7 +421,7 @@
             if (!modal) return;
             modal.classList.add('hidden');
             modal.classList.remove('flex');
-            document.body.classList.remove('modal-open');
+            document.body.classList.remove('overflow-hidden');
         }
     </script>
 </x-pos-layout>

@@ -1,5 +1,8 @@
 @php
     $formatRupiah = fn ($value) => 'Rp '.number_format($value, 0, ',', '.');
+    $qrisImageUrl = ! empty($paymentInfo['qris_image_path']) && \Illuminate\Support\Facades\Storage::disk('public')->exists($paymentInfo['qris_image_path'])
+        ? \Illuminate\Support\Facades\Storage::url($paymentInfo['qris_image_path'])
+        : null;
 @endphp
 
 <x-online-layout :tenant="$tenant" title="Pesanan Berhasil" active="orders">
@@ -31,15 +34,46 @@
 
         <div class="rounded-xl border border-[#c6c5d2] bg-white p-5 shadow-sm">
             <p class="text-xs font-bold uppercase tracking-widest text-[#767681]">Instruksi Pembayaran</p>
-            <p class="mt-3 text-sm text-[#454650]">Kasir akan mengirim reminder pembayaran melalui WhatsApp. Siapkan pembayaran manual ke rekening berikut.</p>
-            <div class="mt-4 rounded-xl border border-dashed border-[#c6c5d2] bg-[#f6faff] p-4">
-                <p class="text-sm font-bold text-[#001356]">{{ $paymentInfo['bank_name'] }}</p>
-                <p class="text-lg font-extrabold text-[#171c20]">{{ $paymentInfo['account_number'] }}</p>
-                <p class="text-sm text-[#454650]">{{ $paymentInfo['account_name'] }}</p>
-            </div>
+            <p class="mt-3 text-sm text-[#454650]">
+                Lakukan pembayaran via <span class="font-bold text-[#001356]">{{ $order->paymentMethodLabel() }}</span>, lalu konfirmasi ke kasir melalui WhatsApp.
+            </p>
+
+            @if ($order->payment_method === 'qris')
+                <div class="mt-4 rounded-xl border border-dashed border-[#c6c5d2] bg-[#f6faff] p-3 text-center">
+                    @if ($qrisImageUrl)
+                        <div class="overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ $qrisImageUrl }}" alt="QRIS" class="block w-full h-auto">
+                        </div>
+                    @else
+                        <div class="mx-auto flex h-28 w-28 items-center justify-center rounded-2xl bg-white text-[#001356] shadow-sm">
+                            <span class="material-symbols-outlined text-[72px]">qr_code_2</span>
+                        </div>
+                    @endif
+                    <p class="mt-3 text-sm font-bold text-[#171c20]">{{ $paymentInfo['qris_merchant_name'] ?: 'Scan QRIS untuk membayar' }}</p>
+                    <p class="mt-1 text-xs text-[#454650]">Total pembayaran: {{ $formatRupiah($order->total) }}</p>
+                </div>
+            @else
+                <div class="mt-4 rounded-xl border border-dashed border-[#c6c5d2] bg-[#f6faff] p-4">
+                    <p class="text-sm font-bold text-[#001356]">{{ $paymentInfo['bank_name'] }}</p>
+                    <p class="text-lg font-extrabold text-[#171c20]">{{ $paymentInfo['account_number'] }}</p>
+                    <p class="text-sm text-[#454650]">{{ $paymentInfo['account_name'] }}</p>
+                    <p class="mt-2 text-xs font-semibold text-[#767681]">Total transfer: {{ $formatRupiah($order->total) }}</p>
+                </div>
+            @endif
         </div>
 
-        <a href="{{ route('online-orders.track', $tenant) }}?wa_number={{ urlencode($order->wa_number) }}" class="flex w-full items-center justify-center rounded-xl bg-[#001356] px-4 py-4 text-sm font-extrabold text-white shadow-sm">
+        @if ($cashierConfirmationUrl)
+            <a href="{{ $cashierConfirmationUrl }}" target="_blank" rel="noopener noreferrer" class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#001356] px-4 py-4 text-sm font-extrabold text-white shadow-sm active:scale-[0.98]">
+                <span class="material-symbols-outlined text-[20px]">chat</span>
+                Konfirmasi ke WhatsApp
+            </a>
+        @else
+            <div class="rounded-xl border border-[#ffdad6] bg-[#fff4f2] px-4 py-3 text-sm font-semibold text-[#93000a]">
+                Nomor WhatsApp kasir belum diatur di pengaturan admin.
+            </div>
+        @endif
+
+        <a href="{{ route('online-orders.track', $tenant) }}?wa_number={{ urlencode($order->wa_number) }}" class="flex w-full items-center justify-center rounded-xl border border-[#c6c5d2] bg-white px-4 py-4 text-sm font-extrabold text-[#454650]">
             Cek Status Pesanan
         </a>
     </section>

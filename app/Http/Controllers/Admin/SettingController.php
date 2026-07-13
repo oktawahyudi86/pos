@@ -36,7 +36,20 @@ class SettingController extends Controller
             'subtitle' => '',
         ], $tenantId);
 
-        return view('admin.settings.edit', compact('paymentMethods', 'receipt', 'onlineBanner'));
+        $onlinePayment = Setting::getValue('online_payment', [
+            'methods' => [
+                'transfer_bank' => true,
+                'qris' => true,
+            ],
+            'bank_name' => 'Mandiri',
+            'account_number' => '1234567890',
+            'account_name' => auth()->user()->tenant?->name ?? config('app.name', 'Keijora POS'),
+            'qris_image_path' => null,
+            'qris_merchant_name' => '',
+            'cashier_wa_number' => '',
+        ], $tenantId);
+
+        return view('admin.settings.edit', compact('paymentMethods', 'receipt', 'onlineBanner', 'onlinePayment'));
     }
 
     public function update(Request $request): RedirectResponse
@@ -52,6 +65,13 @@ class SettingController extends Controller
             'online_banner_image' => ['nullable', 'image', 'max:3072'],
             'online_banner_title' => ['nullable', 'string', 'max:120'],
             'online_banner_subtitle' => ['nullable', 'string', 'max:200'],
+            'online_payment_methods' => ['nullable', 'array'],
+            'online_bank_name' => ['nullable', 'string', 'max:120'],
+            'online_account_number' => ['nullable', 'string', 'max:50'],
+            'online_account_name' => ['nullable', 'string', 'max:120'],
+            'online_qris_image' => ['nullable', 'image', 'max:3072'],
+            'online_qris_merchant_name' => ['nullable', 'string', 'max:120'],
+            'online_cashier_wa_number' => ['nullable', 'string', 'max:20'],
         ]);
 
         $activePaymentMethods = $validated['payment_methods'] ?? [];
@@ -93,6 +113,26 @@ class SettingController extends Controller
             'image_path' => $onlineBanner['image_path'] ?? null,
             'title' => trim((string) ($validated['online_banner_title'] ?? '')),
             'subtitle' => trim((string) ($validated['online_banner_subtitle'] ?? '')),
+        ], $tenantId);
+
+        $onlinePaymentMethods = $validated['online_payment_methods'] ?? [];
+        $onlinePayment = Setting::getValue('online_payment', [], $tenantId);
+
+        if ($request->hasFile('online_qris_image')) {
+            $onlinePayment['qris_image_path'] = $request->file('online_qris_image')->store('online-payment', 'public');
+        }
+
+        Setting::setValue('online_payment', [
+            'methods' => [
+                'transfer_bank' => in_array('transfer_bank', $onlinePaymentMethods, true),
+                'qris' => in_array('qris', $onlinePaymentMethods, true),
+            ],
+            'bank_name' => trim((string) ($validated['online_bank_name'] ?? '')),
+            'account_number' => trim((string) ($validated['online_account_number'] ?? '')),
+            'account_name' => trim((string) ($validated['online_account_name'] ?? '')),
+            'qris_image_path' => $onlinePayment['qris_image_path'] ?? null,
+            'qris_merchant_name' => trim((string) ($validated['online_qris_merchant_name'] ?? '')),
+            'cashier_wa_number' => preg_replace('/\D+/', '', (string) ($validated['online_cashier_wa_number'] ?? '')),
         ], $tenantId);
 
         return back()->with('status', 'Pengaturan berhasil disimpan.');

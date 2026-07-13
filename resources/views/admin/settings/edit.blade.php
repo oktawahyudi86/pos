@@ -242,6 +242,84 @@
             <section class="rounded-2xl border border-[#c6c5d2] bg-white p-4 shadow-[0_8px_20px_rgba(27,43,107,0.05)] sm:p-5">
                 <div class="flex items-start justify-between gap-4">
                     <div>
+                        <h3 class="text-lg font-extrabold text-[#171c20]">Pembayaran Online</h3>
+                        <p class="mt-1 text-sm text-[#454650]">Metode dan detail pembayaran untuk pesanan customer di halaman checkout online.</p>
+                    </div>
+                    <span class="rounded-full bg-[#dde1ff] px-3 py-1 text-xs font-extrabold text-[#001356]">Online</span>
+                </div>
+
+                <div class="mt-4 grid gap-3 md:grid-cols-2">
+                    <label class="flex min-h-16 cursor-pointer items-center justify-between rounded-xl border border-[#c6c5d2] p-4 transition has-[:checked]:border-[#001356] has-[:checked]:bg-[#eef3ff]">
+                        <span class="flex items-center gap-3 text-sm font-bold text-[#171c20]">
+                            <span class="material-symbols-outlined text-[#001356]">account_balance</span>
+                            Transfer Bank
+                        </span>
+                        <input type="checkbox" name="online_payment_methods[]" value="transfer_bank" @checked($onlinePayment['methods']['transfer_bank'] ?? true) class="h-5 w-5 rounded border-[#c6c5d2] text-[#001356] focus:ring-[#001356]">
+                    </label>
+                    <label class="flex min-h-16 cursor-pointer items-center justify-between rounded-xl border border-[#c6c5d2] p-4 transition has-[:checked]:border-[#001356] has-[:checked]:bg-[#eef3ff]">
+                        <span class="flex items-center gap-3 text-sm font-bold text-[#171c20]">
+                            <span class="material-symbols-outlined text-[#001356]">qr_code_2</span>
+                            QRIS
+                        </span>
+                        <input type="checkbox" name="online_payment_methods[]" value="qris" @checked($onlinePayment['methods']['qris'] ?? true) class="h-5 w-5 rounded border-[#c6c5d2] text-[#001356] focus:ring-[#001356]">
+                    </label>
+                </div>
+
+                <div class="mt-5 grid gap-4 md:grid-cols-2">
+                    <div>
+                        <p class="mb-3 text-xs font-bold uppercase tracking-widest text-[#767681]">Transfer Bank</p>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="mb-2 block text-sm font-bold text-[#454650]">Nama Bank</label>
+                                <input type="text" name="online_bank_name" value="{{ old('online_bank_name', $onlinePayment['bank_name'] ?? '') }}" class="w-full rounded-xl border-[#c6c5d2] text-sm focus:border-[#001356] focus:ring-[#001356]">
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-sm font-bold text-[#454650]">Nomor Rekening</label>
+                                <input type="text" name="online_account_number" value="{{ old('online_account_number', $onlinePayment['account_number'] ?? '') }}" class="w-full rounded-xl border-[#c6c5d2] text-sm focus:border-[#001356] focus:ring-[#001356]">
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-sm font-bold text-[#454650]">Atas Nama</label>
+                                <input type="text" name="online_account_name" value="{{ old('online_account_name', $onlinePayment['account_name'] ?? '') }}" class="w-full rounded-xl border-[#c6c5d2] text-sm focus:border-[#001356] focus:ring-[#001356]">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="mb-3 text-xs font-bold uppercase tracking-widest text-[#767681]">QRIS</p>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="mb-2 block text-sm font-bold text-[#454650]">Gambar QRIS</label>
+                                <input type="file" name="online_qris_image" accept="image/*" class="w-full rounded-xl border border-[#c6c5d2] bg-white p-3 text-sm">
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-sm font-bold text-[#454650]">Nama Merchant QRIS</label>
+                                <input type="text" name="online_qris_merchant_name" value="{{ old('online_qris_merchant_name', $onlinePayment['qris_merchant_name'] ?? '') }}" class="w-full rounded-xl border-[#c6c5d2] text-sm focus:border-[#001356] focus:ring-[#001356]">
+                            </div>
+                            @php
+                                $qrisImagePath = $onlinePayment['qris_image_path'] ?? null;
+                                $qrisImageUrl = $qrisImagePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($qrisImagePath)
+                                    ? \Illuminate\Support\Facades\Storage::url($qrisImagePath)
+                                    : null;
+                            @endphp
+                            @if ($qrisImageUrl)
+                                <div class="rounded-xl border border-dashed border-[#c6c5d2] bg-[#f6faff] p-4 text-center">
+                                    <img src="{{ $qrisImageUrl }}" alt="QRIS" class="mx-auto h-40 w-40 rounded-xl bg-white object-contain p-2 shadow-sm">
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="mb-2 block text-sm font-bold text-[#454650]">Nomor WhatsApp Kasir</label>
+                        <input type="text" name="online_cashier_wa_number" value="{{ old('online_cashier_wa_number', $onlinePayment['cashier_wa_number'] ?? '') }}" placeholder="0812xxxxxxx" class="w-full rounded-xl border-[#c6c5d2] text-sm focus:border-[#001356] focus:ring-[#001356]">
+                        <p class="mt-1 text-xs text-[#767681]">Customer akan konfirmasi pembayaran ke nomor ini setelah checkout.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="rounded-2xl border border-[#c6c5d2] bg-white p-4 shadow-[0_8px_20px_rgba(27,43,107,0.05)] sm:p-5">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
                         <h3 class="text-lg font-extrabold text-[#171c20]">Format & Template Struk</h3>
                         <p class="mt-1 text-sm text-[#454650]">Atur identitas yang tampil di struk cetak dan riwayat transaksi.</p>
                     </div>

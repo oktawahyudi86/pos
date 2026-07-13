@@ -185,6 +185,11 @@ class OnlineOrderController extends Controller
             'wa_number' => preg_replace('/\D+/', '', (string) $request->input('wa_number')),
         ]);
 
+        $activePaymentMethods = $this->activeOnlinePaymentMethodKeys($tenant);
+        $request->merge([
+            'payment_method' => $request->input('payment_method', $activePaymentMethods[0] ?? 'manual_transfer'),
+        ]);
+
         $validated = $request->validate([
             'customer_name' => ['required', 'string', 'max:120'],
             'wa_number' => ['required', 'string', 'regex:/^[0-9]+$/', 'max:20'],
@@ -197,6 +202,7 @@ class OnlineOrderController extends Controller
             'district' => ['nullable', 'string', 'max:120'],
             'village' => ['nullable', 'string', 'max:120'],
             'postal_code' => ['nullable', 'string', 'max:20'],
+            'payment_method' => ['required', Rule::in($activePaymentMethods)],
         ]);
 
         [$cartSubtotal, $shippingCost, $total] = $this->cartTotals($cart);
@@ -232,7 +238,7 @@ class OnlineOrderController extends Controller
                 'delivery_village' => $validated['village'] ?? null,
                 'delivery_postal_code' => $validated['postal_code'] ?? null,
                 'status' => 'pesanan_masuk',
-                'payment_method' => 'manual_transfer',
+                'payment_method' => $validated['payment_method'],
                 'subtotal' => $cartSubtotal,
                 'shipping_cost' => $shippingCost,
                 'total' => $total,
@@ -295,6 +301,7 @@ class OnlineOrderController extends Controller
 
         [$cart, $cartSubtotal, $shippingCost, $total] = $this->cartSummary($tenant);
         $paymentInfo = $this->paymentInfo($tenant);
+        $onlinePaymentMethods = $this->activeOnlinePaymentMethodKeys($tenant);
 
         return view('online-orders.checkout', compact(
             'tenant',
@@ -302,7 +309,8 @@ class OnlineOrderController extends Controller
             'cartSubtotal',
             'shippingCost',
             'total',
-            'paymentInfo'
+            'paymentInfo',
+            'onlinePaymentMethods',
         ));
     }
 
@@ -310,9 +318,16 @@ class OnlineOrderController extends Controller
     {
         abort_unless((int) $order->tenant_id === (int) $tenant->id, 404);
 
+        $order->loadMissing('items');
         $paymentInfo = $this->paymentInfo($tenant);
+        $cashierConfirmationUrl = $this->makeCashierConfirmationUrl($order, $paymentInfo);
 
-        return view('online-orders.success', compact('tenant', 'order', 'paymentInfo'));
+        return view('online-orders.success', compact(
+            'tenant',
+            'order',
+            'paymentInfo',
+            'cashierConfirmationUrl',
+        ));
     }
 
     public function track(Tenant $tenant, Request $request): View
@@ -363,12 +378,76 @@ class OnlineOrderController extends Controller
 
     private function paymentInfo(Tenant $tenant): array
     {
-        return Setting::getValue('online_payment', [
+        $settings = Setting::getValue('online_payment', [], $tenant->id);
+
+        return array_merge([
+            'methods' => [
+                'transfer_bank' => true,
+                'qris' => true,
+            ],
             'bank_name' => 'Mandiri',
             'account_number' => '1234567890',
             'account_name' => $tenant->name,
-            'qris_text' => 'QRIS akan ditampilkan oleh kasir.',
-        ], $tenant->id);
+            'qris_image_path' => null,
+            'qris_merchant_name' => '',
+            'cashier_wa_number' => '',
+        ], is_array($settings) ? $settings : []);
+    }
+
+    private function activeOnlinePaymentMethodKeys(Tenant $tenant): array
+    {
+        $paymentInfo = $this->paymentInfo($tenant);
+        $methods = [];
+
+        if ($paymentInfo['methods']['transfer_bank'] ?? true) {
+            $methods[] = 'manual_transfer';
+        }
+
+        if ($paymentInfo['methods']['qris'] ?? true) {
+            $methods[] = 'qris';
+        }
+
+        return $methods === [] ? ['manual_transfer'] : $methods;
+    }
+
+    private function makeCashierConfirmationMessage(OnlineOrder $order): string
+    {
+        $items = $order->items
+            ->map(fn ($item) => "- {$item->quantity}x {$item->product_name} (".$this->formatRupiah((int) $item->line_total).')')
+            ->join("\n");
+
+        return implode("\n", array_filter([
+            "Halo, saya {$order->customer_name} ingin konfirmasi pembayaran pesanan {$order->order_number}.",
+            '',
+            'Metode pembayaran: '.$order->paymentMethodLabel(),
+            'Total: '.$this->formatRupiah((int) $order->total),
+            '',
+            'Ringkasan pesanan:',
+            $items,
+            '',
+            'Nomor WhatsApp saya: '.$order->wa_number,
+            'Mohon dicek ya. Terima kasih.',
+        ]));
+    }
+
+    private function makeCashierConfirmationUrl(OnlineOrder $order, array $paymentInfo): ?string
+    {
+        $cashierNumber = preg_replace('/\D+/', '', (string) ($paymentInfo['cashier_wa_number'] ?? '')) ?: '';
+
+        if ($cashierNumber === '') {
+            return null;
+        }
+
+        if (str_starts_with($cashierNumber, '0')) {
+            $cashierNumber = '62'.substr($cashierNumber, 1);
+        }
+
+        return 'https://wa.me/'.$cashierNumber.'?text='.rawurlencode($this->makeCashierConfirmationMessage($order));
+    }
+
+    private function formatRupiah(int $value): string
+    {
+        return 'Rp '.number_format($value, 0, ',', '.');
     }
 
     private function makeCartItem(Tenant $tenant, array $validated): array

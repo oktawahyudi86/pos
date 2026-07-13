@@ -100,6 +100,14 @@ class OnlineOrder extends Model
         return 'https://wa.me/'.$digits;
     }
 
+    public function paymentMethodLabel(): string
+    {
+        return match ($this->payment_method) {
+            'qris' => 'QRIS',
+            default => 'Transfer Bank',
+        };
+    }
+
     public static function statuses(): array
     {
         return [

@@ -52,6 +52,79 @@ $navItems = [
                 font-size: 16px !important;
             }
         }
+        @media (max-width: 390px) {
+            .cashier-topbar {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+
+            .cashier-topbar .lg\:hidden img {
+                max-width: 86px;
+            }
+
+            .cashier-topbar .material-symbols-outlined {
+                font-size: 22px;
+            }
+
+            .cashier-main > .flex {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+                gap: 0.75rem;
+            }
+
+            .cashier-main section > .custom-scrollbar {
+                padding-right: 0;
+            }
+
+            .cashier-main section > .custom-scrollbar > .grid {
+                gap: 0.5rem;
+            }
+
+            .cashier-main section > .custom-scrollbar > .grid > article .relative {
+                height: 6.1rem;
+            }
+
+            .cashier-main section > .custom-scrollbar > .grid > article .space-y-1 {
+                padding: 0.5rem;
+            }
+
+            .cashier-main section > .custom-scrollbar > .grid > article h3 {
+                font-size: 0.72rem;
+                line-height: 1rem;
+                min-height: 2rem;
+            }
+
+            .cashier-main section > .custom-scrollbar > .grid > article p,
+            .cashier-main section > .custom-scrollbar > .grid > article div {
+                font-size: 0.66rem;
+            }
+
+            .cashier-main section > .custom-scrollbar > .grid > article .rounded-full {
+                padding-top: 0.2rem;
+                padding-bottom: 0.2rem;
+            }
+
+            .cashier-main [data-cart-panel="desktop"] {
+                min-width: 0;
+            }
+
+            .cashier-main [data-cart-panel="drawer"],
+            .cashier-main .cart-drawer-backdrop,
+            .cashier-main #payment-modal,
+            .cashier-main #payment-success-modal {
+                max-width: 100vw;
+            }
+
+            .cashier-main .fixed.left-4.right-4 {
+                left: 0.75rem;
+                right: 0.75rem;
+            }
+
+            .cashier-main nav.fixed.bottom-0 {
+                padding-left: 0.25rem;
+                padding-right: 0.25rem;
+            }
+        }
     </style>
 </head>
 <body class="mobile-no-zoom overflow-x-hidden bg-[#f6faff] text-[#171c20]" style="font-family: 'Plus Jakarta Sans', sans-serif;">

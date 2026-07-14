@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'google_maps' => [
+        'key' => env('GOOGLE_MAPS_API_KEY'),
+    ],
+
+    'geoapify' => [
+        'key' => env('GEOAPIFY_API_KEY'),
+    ],
+
 ];

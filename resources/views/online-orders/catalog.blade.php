@@ -118,13 +118,15 @@
         @endforelse
     </section>
 
-    <a href="{{ route('online-orders.checkout.form', $tenant) }}" class="fixed bottom-20 right-4 z-40 flex items-center gap-3 rounded-full border-4 border-white bg-[#001356] px-4 py-3 text-white shadow-[0_12px_28px_rgba(1,19,86,0.32)] {{ $cart->isEmpty() ? 'pointer-events-none opacity-60' : '' }}">
+    <a href="{{ route('online-orders.address', $tenant) }}" class="fixed bottom-20 right-4 z-40 flex items-center gap-3 rounded-full border-4 border-white bg-[#001356] px-4 py-3 text-white shadow-[0_12px_28px_rgba(1,19,86,0.32)] {{ $cart->isEmpty() ? 'pointer-events-none opacity-60' : '' }}">
         <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">shopping_cart</span>
         <span class="text-left leading-tight">
             <span class="block text-[10px] font-bold uppercase tracking-widest text-white/80">Cart Total</span>
             <span class="block text-base font-extrabold sm:text-lg">{{ $formatRupiah($total) }}</span>
         </span>
     </a>
+
+    <x-online-welcome-modal :tenant="$tenant" />
 
     <div id="product-sheet" class="fixed inset-0 z-[80] hidden items-end bg-[#171c20]/45" onclick="closeProductSheet()">
         <form id="product-sheet-form" method="POST" action="{{ route('online-orders.cart.store', $tenant) }}" class="max-h-[88dvh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-2xl" onclick="event.stopPropagation()">
@@ -199,8 +201,8 @@
         const productSheetPrice = document.getElementById('product-sheet-price');
         const productSheetStock = document.getElementById('product-sheet-stock');
         const productSheetSubmit = document.getElementById('product-sheet-submit');
-        const detailEndpointTemplate = @json(route('online-orders.product.detail', [$tenant, '__PRODUCT__']));
-        const cartFormatRupiah = @json('Rp ').replace('Rp ', 'Rp ');
+        const detailEndpointTemplate = '{{ route('online-orders.product.detail', [$tenant, '__PRODUCT__']) }}';
+        const cartFormatRupiah = 'Rp ';
 
         function formatRupiah(value) {
             return 'Rp ' + Number(value || 0).toLocaleString('id-ID');

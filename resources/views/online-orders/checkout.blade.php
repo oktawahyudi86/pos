@@ -5,6 +5,8 @@
     $qrisImageUrl = ! empty($paymentInfo['qris_image_path']) && \Illuminate\Support\Facades\Storage::disk('public')->exists($paymentInfo['qris_image_path'])
         ? \Illuminate\Support\Facades\Storage::url($paymentInfo['qris_image_path'])
         : null;
+    $customer = auth()->user();
+    $isGuest = ! auth()->check();
 @endphp
 
 <x-online-layout :tenant="$tenant" title="Checkout" active="cart" :back-url="route('online-orders.catalog', $tenant)">
@@ -17,6 +19,26 @@
         @if ($errors->any())
             <div class="rounded-xl border border-[#ffdad6] bg-white px-4 py-3 text-sm font-semibold text-[#93000a]">
                 {{ $errors->first() }}
+            </div>
+        @endif
+
+        @if ($isGuest)
+            <div class="rounded-xl border border-[#b9c7df] bg-gradient-to-r from-[#eef3ff] to-white px-4 py-4">
+                <div class="flex items-center justify-between gap-4">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-[#001356]" style="font-variation-settings: 'FILL' 1;">account_circle</span>
+                            <div>
+                                <p class="text-sm font-extrabold text-[#001356]">Guest</p>
+                                <p class="text-xs text-[#454650]">Belum masuk</p>
+                            </div>
+                        </div>
+                        <p class="mt-2 text-xs leading-5 text-[#454650]">Masuk agar alamat tersimpan dan Anda dapat melihat riwayat pesanan.</p>
+                    </div>
+                    <a href="{{ route('online-orders.auth', [$tenant, 'redirect' => route('online-orders.checkout.form', $tenant)]) }}" class="shrink-0 rounded-xl bg-[#001356] px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition active:scale-[0.98]">
+                        Masuk
+                    </a>
+                </div>
             </div>
         @endif
 
@@ -55,29 +77,35 @@
             @csrf
             <div>
                 <label class="mb-2 block text-sm font-bold text-[#171c20]">Nama penerima</label>
-                <input name="customer_name" value="{{ old('customer_name') }}" autocomplete="name" class="h-12 w-full rounded-xl border-[#c6c5d2] text-base focus:border-[#001356] focus:ring-[#001356]" placeholder="Nama lengkap">
+                <input name="customer_name" value="{{ old('customer_name', $customer?->name) }}" autocomplete="name" class="h-12 w-full rounded-xl border-[#c6c5d2] text-base focus:border-[#001356] focus:ring-[#001356]" placeholder="Nama lengkap">
             </div>
             <div>
                 <label class="mb-2 block text-sm font-bold text-[#171c20]">No. WhatsApp</label>
-                <input id="wa-number-input" name="wa_number" value="{{ old('wa_number') }}" type="tel" inputmode="numeric" pattern="[0-9]*" autocomplete="tel" class="h-12 w-full rounded-xl border-[#c6c5d2] text-base focus:border-[#001356] focus:ring-[#001356]" placeholder="0812xxxxxxx">
+                <input id="wa-number-input" name="wa_number" value="{{ old('wa_number', $customer?->phone) }}" type="tel" inputmode="numeric" pattern="[0-9]*" autocomplete="tel" class="h-12 w-full rounded-xl border-[#c6c5d2] text-base focus:border-[#001356] focus:ring-[#001356]" placeholder="0812xxxxxxx">
             </div>
 
             <div id="delivery-location-root" class="rounded-2xl border border-[#dfe3e9] bg-[#f6faff] p-4">
                 <div class="flex items-start justify-between gap-3">
                     <div>
-                        <p class="text-sm font-extrabold text-[#171c20]">Lokasi pengantaran</p>
-                        <p id="location-hint" class="mt-1 text-xs leading-5 text-[#454650]">Pilih lokasi pengantaran agar kurir dapat menemukan alamat Anda dengan akurat.</p>
+                        <p class="text-sm font-extrabold text-[#171c20]">Alamat Pengiriman</p>
+                        <p id="location-hint" class="mt-1 text-xs leading-5 text-[#454650]">Lokasi perangkat belum diaktifkan. Silakan pilih alamat pengiriman.</p>
                     </div>
-                    <span class="material-symbols-outlined text-[#001356]">location_on</span>
+                    <span class="material-symbols-outlined text-[#001356]" style="font-variation-settings: 'FILL' 1;">location_on</span>
                 </div>
 
                 <div class="mt-4 space-y-3">
-                    <div id="location-initial-state">
-                        <button id="use-my-location-button" type="button" class="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#001356] px-4 text-sm font-extrabold text-white shadow-sm transition active:scale-[0.98]">
-                            <span class="material-symbols-outlined text-[22px]">my_location</span>
-                            Gunakan Lokasi Saya
+                    <div id="location-initial-state" class="rounded-2xl border border-dashed border-[#c6c5d2] bg-white p-4 text-center">
+                        <span class="material-symbols-outlined mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#eef3ff] text-[#001356]" style="font-variation-settings: 'FILL' 1;">location_searching</span>
+                        <p class="mt-3 text-sm font-extrabold text-[#171c20]">Pilih alamat dari peta</p>
+                        <p class="mt-1 text-xs leading-5 text-[#454650]">Anda tetap bisa checkout meski GPS ditolak. Cari alamat atau pilih titik di peta.</p>
+                        <button id="choose-address-button" type="button" class="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#001356] px-4 text-sm font-extrabold text-white shadow-sm transition active:scale-[0.98]">
+                            <span class="material-symbols-outlined text-[20px]">map</span>
+                            Pilih Alamat
                         </button>
-                        <p class="mt-3 text-center text-[11px] leading-5 text-[#767681]">Koordinat GPS menjadi sumber utama alamat. Tidak perlu mengetik alamat lengkap.</p>
+                        <button id="use-my-location-button" type="button" class="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#c6c5d2] bg-white px-4 text-sm font-extrabold text-[#001356] transition active:scale-[0.98]">
+                            <span class="material-symbols-outlined text-[20px]">my_location</span>
+                            Gunakan Lokasi Perangkat
+                        </button>
                     </div>
 
                     <div id="location-selected-state" class="hidden space-y-3">
@@ -99,13 +127,15 @@
                         </div>
 
                         <div>
-                            <p class="mb-2 text-sm font-bold text-[#171c20]">Alamat lokasi</p>
+                            <p class="mb-2 text-sm font-bold text-[#171c20]">Alamat Pengiriman</p>
                             <div id="address-display-card" class="relative overflow-hidden rounded-2xl border border-[#c6c5d2] bg-white">
-                                <div id="address-map-thumbnail" class="address-map-thumbnail hidden" title="Ketuk untuk ubah lokasi di peta">
-                                    <div id="address-map-thumbnail-canvas"></div>
-                                    <div class="address-map-thumbnail-overlay">
-                                        <span class="material-symbols-outlined text-[16px]">map</span>
-                                        Ketuk untuk ubah di peta
+                                <div id="address-map-thumbnail" class="address-map-thumbnail hidden h-32 w-full cursor-pointer" title="Ketuk untuk ubah lokasi di peta">
+                                    <div id="address-map-thumbnail-canvas" class="h-full w-full"></div>
+                                    <div class="address-map-thumbnail-overlay absolute inset-0 flex items-center justify-center bg-black/30">
+                                        <div class="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#001356]">
+                                            <span class="material-symbols-outlined text-[16px]">map</span>
+                                            Ketuk untuk ubah di peta
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="p-4">
@@ -114,8 +144,13 @@
                                         <div class="skeleton-shimmer h-3 w-full rounded-full"></div>
                                         <div class="skeleton-shimmer h-3 w-3/5 rounded-full"></div>
                                     </div>
-                                    <p id="address-display-text" class="text-sm font-semibold leading-6 text-[#171c20] transition-opacity">{{ old('address') ?: 'Alamat belum tersedia' }}</p>
-                                    <p class="mt-2 text-[11px] font-semibold text-[#767681]">Diisi otomatis dari koordinat GPS</p>
+                                    <div class="flex items-start gap-3">
+                                        <span class="material-symbols-outlined mt-0.5 flex-shrink-0 text-[#001356]" style="font-variation-settings: 'FILL' 1;">location_on</span>
+                                        <div class="min-w-0 flex-1">
+                                            <p id="address-display-text" class="text-sm font-semibold leading-6 text-[#171c20] transition-opacity">{{ old('address') ?: 'Alamat belum tersedia' }}</p>
+                                            <p id="address-coordinate-text" class="mt-1 text-[11px] font-semibold text-[#767681]">Latitude dan longitude tersimpan otomatis.</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -125,23 +160,25 @@
                             Ubah Lokasi di Peta
                         </button>
 
+                        <div id="coverage-loading" class="hidden rounded-xl border border-[#dfe3e9] bg-white px-4 py-3 text-xs font-semibold leading-5 text-[#454650]">
+                            <span class="flex items-center gap-2">
+                                <span class="h-4 w-4 animate-spin rounded-full border-2 border-[#c6c5d2] border-t-[#001356]"></span>
+                                Memvalidasi area pengiriman...
+                            </span>
+                        </div>
+
                         <div id="coverage-banner" class="hidden rounded-xl border border-[#ffdad6] bg-[#fff4f2] px-4 py-3 text-xs font-semibold leading-5 text-[#93000a]"></div>
 
                         <div id="coverage-success" class="hidden rounded-xl border border-[#8fdcb7] bg-[#e7fff2] px-4 py-3 text-xs font-semibold leading-5 text-[#005236]">
                             <span class="flex items-center gap-2">
                                 <span class="material-symbols-outlined text-[18px]">check_circle</span>
-                                Lokasi Anda berada dalam jangkauan pengantaran kami.
+                                Area Pengiriman Tersedia
                             </span>
-                        </div>
-
-                        <div>
-                            <label class="mb-2 block text-sm font-bold text-[#171c20]">Detail alamat</label>
-                            <textarea name="address_detail" rows="3" class="w-full rounded-xl border-[#c6c5d2] bg-white text-base focus:border-[#001356] focus:ring-[#001356]" placeholder="Nomor rumah, blok, RT/RW, lantai, patokan untuk kurir...">{{ old('address_detail') }}</textarea>
-                            <p class="mt-1 text-[11px] leading-5 text-[#767681]">Opsional. Tambahkan info yang tidak tercakup di peta, misalnya nomor unit atau patokan.</p>
                         </div>
                     </div>
 
                     <input id="formatted-address-input" type="hidden" name="address" value="{{ old('address') }}">
+                    <input type="hidden" name="address_detail" value="{{ old('address_detail') }}">
                     <input id="delivery-latitude" type="hidden" name="delivery_latitude" value="{{ old('delivery_latitude') }}">
                     <input id="delivery-longitude" type="hidden" name="delivery_longitude" value="{{ old('delivery_longitude') }}">
                     <input id="delivery-place-id" type="hidden" name="place_id" value="{{ old('place_id') }}">
@@ -154,9 +191,9 @@
             </div>
 
             <div class="rounded-xl bg-[#f6faff] p-4">
-                <div class="flex justify-between text-sm text-[#454650]"><span>Subtotal</span><span>{{ $formatRupiah($cartSubtotal) }}</span></div>
-                <div class="mt-2 flex justify-between text-sm text-[#454650]"><span>Ongkir</span><span>{{ $formatRupiah($shippingCost) }}</span></div>
-                <div class="mt-3 flex justify-between border-t border-[#dfe3e9] pt-3 text-base font-extrabold text-[#001356]"><span>Total</span><span>{{ $formatRupiah($total) }}</span></div>
+                <div class="flex justify-between text-sm text-[#454650]"><span>Subtotal</span><span data-subtotal-value="{{ $cartSubtotal }}">{{ $formatRupiah($cartSubtotal) }}</span></div>
+                <div class="mt-2 flex justify-between text-sm text-[#454650]"><span>Ongkir</span><span id="shipping-cost-text" data-shipping-cost="{{ $shippingCost }}">{{ $formatRupiah($shippingCost) }}</span></div>
+                <div class="mt-3 flex justify-between border-t border-[#dfe3e9] pt-3 text-base font-extrabold text-[#001356]"><span>Total</span><span id="order-total-text" data-total="{{ $total }}">{{ $formatRupiah($total) }}</span></div>
             </div>
 
             <div class="rounded-xl border border-dashed border-[#c6c5d2] p-4">
@@ -212,6 +249,20 @@
         </form>
     </section>
 
+    <div id="location-permission-prompt" class="fixed inset-x-4 bottom-24 z-[900] hidden rounded-2xl border border-[#dfe3e9] bg-white p-4 shadow-[0_18px_50px_rgba(0,19,86,0.18)] sm:left-auto sm:right-6 sm:max-w-sm">
+        <div class="flex items-start gap-3">
+            <span class="material-symbols-outlined mt-0.5 text-[#001356]" style="font-variation-settings: 'FILL' 1;">my_location</span>
+            <div class="min-w-0 flex-1">
+                <p class="text-sm font-extrabold text-[#171c20]">Aktifkan lokasi</p>
+                <p class="mt-1 text-xs leading-5 text-[#454650]">Aktifkan lokasi untuk membantu menemukan alamat pengiriman Anda.</p>
+            </div>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-2">
+            <button id="location-permission-allow" type="button" class="min-h-11 rounded-xl bg-[#001356] px-3 text-sm font-extrabold text-white">Aktifkan Lokasi</button>
+            <button id="location-permission-later" type="button" class="min-h-11 rounded-xl border border-[#c6c5d2] bg-white px-3 text-sm font-extrabold text-[#454650]">Nanti Saja</button>
+        </div>
+    </div>
+
     <div id="map-picker-modal" class="fixed inset-0 z-[1000] hidden bg-white">
         <div class="flex h-full flex-col">
             <div class="flex items-center gap-3 border-b border-[#dfe3e9] bg-white px-4 py-3">
@@ -220,7 +271,7 @@
                 </button>
                 <div class="min-w-0 flex-1">
                     <p class="text-sm font-extrabold text-[#171c20]">Pilih lokasi pengantaran</p>
-                    <p class="text-[11px] text-[#767681]">Geser peta atau cari alamat</p>
+                    <p class="text-[11px] text-[#767681]">Cari alamat atau pilih titik pada peta</p>
                 </div>
             </div>
 
@@ -232,13 +283,16 @@
                     </div>
                 </div>
                 <div id="map-picker-canvas" class="h-full w-full"></div>
-                <div class="map-picker-pin">
-                    <span class="material-symbols-outlined text-[42px] text-[#ce2418]" style="font-variation-settings: 'FILL' 1;">location_on</span>
-                </div>
             </div>
 
             <div class="border-t border-[#dfe3e9] bg-white p-4">
                 <div id="map-coverage-banner" class="mb-3 hidden rounded-xl border border-[#ffdad6] bg-[#fff4f2] px-4 py-3 text-xs font-semibold leading-5 text-[#93000a]"></div>
+                <div id="map-coverage-loading" class="mb-3 hidden rounded-xl border border-[#dfe3e9] bg-[#f6faff] px-4 py-3 text-xs font-semibold leading-5 text-[#454650]">
+                    <span class="flex items-center gap-2">
+                        <span class="h-4 w-4 animate-spin rounded-full border-2 border-[#c6c5d2] border-t-[#001356]"></span>
+                        Memvalidasi area pengiriman...
+                    </span>
+                </div>
                 <div id="map-coverage-success" class="mb-3 hidden rounded-xl border border-[#8fdcb7] bg-[#e7fff2] px-4 py-3 text-xs font-semibold leading-5 text-[#005236]">
                     <span class="flex items-center gap-2">
                         <span class="material-symbols-outlined text-[18px]">check_circle</span>
@@ -246,8 +300,14 @@
                     </span>
                 </div>
                 <button id="map-confirm-button" type="button" class="mb-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#001356] px-4 text-sm font-extrabold text-white active:scale-[0.98]">
-                    <span class="material-symbols-outlined text-[20px]">check</span>
-                    Gunakan lokasi ini
+                    <span data-map-confirm-label class="flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-[20px]">check</span>
+                        Gunakan lokasi ini
+                    </span>
+                    <span data-map-confirm-loading class="hidden items-center justify-center gap-2">
+                        <span class="btn-spinner" aria-hidden="true"></span>
+                        Menyimpan lokasi...
+                    </span>
                 </button>
                 <button id="map-cancel-button" type="button" class="flex min-h-11 w-full items-center justify-center rounded-xl border border-[#c6c5d2] bg-white px-4 text-sm font-bold text-[#454650] active:scale-[0.98]">
                     Batal
@@ -258,10 +318,18 @@
 
     @php
         $onlineCheckoutDeliveryConfig = [
+            'tenant' => $tenant,
             'reverseGeocodeUrl' => route('online-orders.reverse-geocode', $tenant),
+            'deliveryCoverageUrl' => route('online-orders.delivery-coverage', $tenant),
             'geocodeSearchUrl' => route('online-orders.geocode-search', $tenant),
+            'geoapifyApiKey' => config('services.geoapify.key'),
             'deliveryCoverageConfig' => $deliveryCoverage,
             'outOfCoverageMessage' => \App\Services\DeliveryCoverageService::OUT_OF_COVERAGE_MESSAGE,
+            'totals' => [
+                'subtotal' => $cartSubtotal,
+                'shippingCost' => $shippingCost,
+                'total' => $total,
+            ],
             'oldValues' => [
                 'latitude' => old('delivery_latitude'),
                 'longitude' => old('delivery_longitude'),
@@ -275,10 +343,11 @@
             ],
         ];
     @endphp
-    @vite('resources/js/online-checkout.js')
     <script>
         window.onlineCheckoutDeliveryConfig = @json($onlineCheckoutDeliveryConfig);
-
+    </script>
+    @vite('resources/js/online-checkout.js')
+    <script>
         const waNumberInput = document.getElementById('wa-number-input');
 
         function sanitizePhoneNumber() {

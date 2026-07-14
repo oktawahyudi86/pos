@@ -113,8 +113,18 @@
                         <div>
                             <label class="text-xs font-bold uppercase tracking-[0.16em] text-[#767681]">Password Baru</label>
                             <div class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                                <input name="password" type="password" placeholder="Opsional" class="min-h-12 w-full rounded-xl border border-[#c6c5d2] bg-white px-4 text-sm font-semibold text-[#171c20] outline-none focus:border-[#001356]">
-                                <input name="password_confirmation" type="password" placeholder="Konfirmasi" class="min-h-12 w-full rounded-xl border border-[#c6c5d2] bg-white px-4 text-sm font-semibold text-[#171c20] outline-none focus:border-[#001356]">
+                                <div class="relative">
+                                    <input name="password" type="password" placeholder="Opsional" class="min-h-12 w-full rounded-xl border border-[#c6c5d2] bg-white px-4 text-sm font-semibold text-[#171c20] outline-none focus:border-[#001356] pr-12">
+                                    <button type="button" onclick="togglePassword(this.previousElementSibling, this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#767681] transition hover:text-[#001356]">
+                                        <span class="material-symbols-outlined text-[20px]">visibility</span>
+                                    </button>
+                                </div>
+                                <div class="relative">
+                                    <input name="password_confirmation" type="password" placeholder="Konfirmasi" class="min-h-12 w-full rounded-xl border border-[#c6c5d2] bg-white px-4 text-sm font-semibold text-[#171c20] outline-none focus:border-[#001356] pr-12">
+                                    <button type="button" onclick="togglePassword(this.previousElementSibling, this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#767681] transition hover:text-[#001356]">
+                                        <span class="material-symbols-outlined text-[20px]">visibility</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -128,4 +138,18 @@
             </div>
         </section>
     </div>
+
+    <script>
+        function togglePassword(input, button) {
+            const icon = button.querySelector('.material-symbols-outlined');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.textContent = 'visibility_off';
+            } else {
+                input.type = 'password';
+                icon.textContent = 'visibility';
+            }
+        }
+    </script>
 </x-pos-layout>

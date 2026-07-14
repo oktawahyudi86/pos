@@ -19,12 +19,14 @@
             ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('dashboard')],
             ['key' => 'products', 'label' => 'Produk', 'icon' => 'inventory_2', 'href' => route('admin.products.index')],
             ['key' => 'transactions', 'label' => 'Transaksi', 'icon' => 'receipt_long', 'href' => route('transactions.index')],
+            ['key' => 'customers', 'label' => 'Pelanggan', 'icon' => 'people', 'href' => route('customers.index')],
             ['key' => 'users', 'label' => 'Pengguna', 'icon' => 'group', 'href' => route('admin.users.index')],
             ['key' => 'settings', 'label' => 'Pengaturan', 'icon' => 'settings', 'href' => route('admin.settings.edit')],
         ]
         : [
             ['key' => 'cashier', 'label' => 'Kasir', 'icon' => 'shopping_basket', 'href' => route('cashier.index')],
             ['key' => 'orders', 'label' => 'Orderan', 'icon' => 'pending_actions', 'href' => route('cashier.orders.index')],
+            ['key' => 'customers', 'label' => 'Pelanggan', 'icon' => 'people', 'href' => route('customers.index')],
             ['key' => 'transactions', 'label' => 'Transaksi', 'icon' => 'receipt_long', 'href' => route('transactions.index')],
         ]);
 

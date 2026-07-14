@@ -20,13 +20,14 @@ class OnlineOrderFlowTest extends TestCase
     public function test_customer_checkout_creates_incoming_order_without_reducing_stock(): void
     {
         [$tenant, $product] = $this->makeTenantProduct(stock: 8);
+        $customer = $this->makeCustomer($tenant);
 
         $this->post(route('online-orders.cart.store', $tenant), [
             'product_id' => $product->id,
             'quantity' => 2,
         ])->assertRedirect();
 
-        $response = $this->post(route('online-orders.checkout', $tenant), $this->validCheckoutPayload([
+        $response = $this->actingAs($customer)->post(route('online-orders.checkout', $tenant), $this->validCheckoutPayload([
             'address' => 'Jl. Customer No. 1',
         ]));
 
@@ -149,6 +150,7 @@ class OnlineOrderFlowTest extends TestCase
     public function test_checkout_is_blocked_when_delivery_location_is_outside_radius(): void
     {
         [$tenant, $product] = $this->makeTenantProduct(stock: 8);
+        $customer = $this->makeCustomer($tenant);
 
         Setting::setValue('online_delivery', [
             'enabled' => true,
@@ -162,7 +164,8 @@ class OnlineOrderFlowTest extends TestCase
             'quantity' => 1,
         ])->assertRedirect();
 
-        $response = $this->from(route('online-orders.checkout.form', $tenant))
+        $response = $this->actingAs($customer)
+            ->from(route('online-orders.checkout.form', $tenant))
             ->post(route('online-orders.checkout', $tenant), $this->validCheckoutPayload([
                 'address' => 'Jl. Luar Jangkauan',
                 'delivery_latitude' => -7.7506,
@@ -183,6 +186,7 @@ class OnlineOrderFlowTest extends TestCase
     public function test_checkout_is_allowed_when_delivery_location_is_within_radius(): void
     {
         [$tenant, $product] = $this->makeTenantProduct(stock: 8);
+        $customer = $this->makeCustomer($tenant);
 
         Setting::setValue('online_delivery', [
             'enabled' => true,
@@ -196,7 +200,7 @@ class OnlineOrderFlowTest extends TestCase
             'quantity' => 1,
         ])->assertRedirect();
 
-        $response = $this->post(route('online-orders.checkout', $tenant), $this->validCheckoutPayload([
+        $response = $this->actingAs($customer)->post(route('online-orders.checkout', $tenant), $this->validCheckoutPayload([
             'address' => 'Jl. Dekat Toko',
             'delivery_latitude' => -7.7960,
             'delivery_longitude' => 110.3700,
@@ -212,11 +216,35 @@ class OnlineOrderFlowTest extends TestCase
     {
         [$cashier, $order] = $this->makeCashierOrder();
         $tenant = $order->tenant;
+        $customer = $this->makeCustomer($tenant);
 
         $this->get(route('online-orders.catalog', $tenant))->assertOk();
-        $this->get(route('online-orders.checkout.form', $tenant))->assertOk();
+        $this->actingAs($customer)->get(route('online-orders.checkout.form', $tenant))->assertOk();
+        $this->actingAs($customer)->get(route('online-orders.profile', $tenant))->assertOk();
         $this->get(route('online-orders.track', [$tenant, 'wa_number' => $order->wa_number]))->assertOk();
         $this->actingAs($cashier)->get(route('cashier.orders.index'))->assertOk();
+    }
+
+    public function test_guest_checkout_redirects_to_customer_auth(): void
+    {
+        [$tenant] = $this->makeTenantProduct(stock: 8);
+
+        $this->get(route('online-orders.checkout.form', $tenant))
+            ->assertRedirect(route('online-orders.auth', [
+                'tenant' => $tenant,
+                'redirect' => route('online-orders.checkout.form', $tenant),
+            ]));
+    }
+
+    public function test_guest_profile_redirects_to_customer_auth(): void
+    {
+        [$tenant] = $this->makeTenantProduct(stock: 8);
+
+        $this->get(route('online-orders.profile', $tenant))
+            ->assertRedirect(route('online-orders.auth', [
+                'tenant' => $tenant,
+                'redirect' => route('online-orders.profile', $tenant),
+            ]));
     }
 
     private function validCheckoutPayload(array $overrides = []): array
@@ -308,5 +336,19 @@ class OnlineOrderFlowTest extends TestCase
         $cashier->assignRole($role);
 
         return $cashier;
+    }
+
+    private function makeCustomer(Tenant $tenant): User
+    {
+        $role = Role::firstOrCreate(['name' => 'Customer']);
+
+        $customer = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'phone' => '081234567890',
+            'status' => 'active',
+        ]);
+        $customer->assignRole($role);
+
+        return $customer;
     }
 }

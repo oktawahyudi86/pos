@@ -131,13 +131,23 @@
 
                                 <div>
                                     <label for="password" class="mb-2 block text-xs font-extrabold uppercase tracking-[0.14em] text-[#454650]">Password</label>
-                                    <input id="password" class="min-h-12 w-full rounded-xl border border-[#c6c5d2] bg-[#fbfcff] px-4 text-base font-semibold text-[#171c20] outline-none transition focus:border-[#001356] focus:ring-2 focus:ring-[#d5e3fc] sm:text-sm" type="password" name="password" required autocomplete="new-password" placeholder="Minimal 8 karakter">
+                                    <div class="relative">
+                                        <input id="password" class="min-h-12 w-full rounded-xl border border-[#c6c5d2] bg-[#fbfcff] px-4 text-base font-semibold text-[#171c20] outline-none transition focus:border-[#001356] focus:ring-2 focus:ring-[#d5e3fc] sm:text-sm pr-12" type="password" name="password" required autocomplete="new-password" placeholder="Minimal 8 karakter">
+                                        <button type="button" onclick="togglePassword('password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#767681] transition hover:text-[#001356]">
+                                            <span class="material-symbols-outlined text-[20px]">visibility</span>
+                                        </button>
+                                    </div>
                                     <x-input-error :messages="$errors->get('password')" class="mt-2" />
                                 </div>
 
                                 <div>
                                     <label for="password_confirmation" class="mb-2 block text-xs font-extrabold uppercase tracking-[0.14em] text-[#454650]">Konfirmasi Password</label>
-                                    <input id="password_confirmation" class="min-h-12 w-full rounded-xl border border-[#c6c5d2] bg-[#fbfcff] px-4 text-base font-semibold text-[#171c20] outline-none transition focus:border-[#001356] focus:ring-2 focus:ring-[#d5e3fc] sm:text-sm" type="password" name="password_confirmation" required autocomplete="new-password" placeholder="Ulangi password">
+                                    <div class="relative">
+                                        <input id="password_confirmation" class="min-h-12 w-full rounded-xl border border-[#c6c5d2] bg-[#fbfcff] px-4 text-base font-semibold text-[#171c20] outline-none transition focus:border-[#001356] focus:ring-2 focus:ring-[#d5e3fc] sm:text-sm pr-12" type="password" name="password_confirmation" required autocomplete="new-password" placeholder="Ulangi password">
+                                        <button type="button" onclick="togglePassword('password_confirmation', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#767681] transition hover:text-[#001356]">
+                                            <span class="material-symbols-outlined text-[20px]">visibility</span>
+                                        </button>
+                                    </div>
                                     <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
                                 </div>
                             </div>
@@ -157,4 +167,19 @@
             </section>
         </div>
     </main>
+
+    <script>
+        function togglePassword(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('.material-symbols-outlined');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.textContent = 'visibility_off';
+            } else {
+                input.type = 'password';
+                icon.textContent = 'visibility';
+            }
+        }
+    </script>
 </x-guest-layout>

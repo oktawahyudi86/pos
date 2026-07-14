@@ -1,36 +1,36 @@
 /**
- * Server-side reverse geocoding via the tenant reverse-geocode endpoint.
+ * Reverse geocoding via Geoapify API.
  */
 
-export async function reverseGeocode(endpoint, latitude, longitude) {
+export async function reverseGeocode(geoapifyApiKey, latitude, longitude) {
     const params = new URLSearchParams({
-        latitude: Number(latitude).toFixed(7),
-        longitude: Number(longitude).toFixed(7),
+        lat: Number(latitude).toFixed(7),
+        lon: Number(longitude).toFixed(7),
+        apiKey: geoapifyApiKey,
+        lang: 'id',
     });
 
-    const response = await fetch(`${endpoint}?${params.toString()}`, {
-        headers: {
-            Accept: 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-    });
+    const response = await fetch(`https://api.geoapify.com/v1/geocode/reverse?${params.toString()}`);
 
     const payload = await response.json().catch(() => ({}));
 
-    if (!response.ok) {
-        throw new Error(payload.message || 'Alamat tidak dapat ditentukan dari lokasi ini.');
+    if (!response.ok || !payload.features || !payload.features.length) {
+        throw new Error('Alamat tidak dapat ditentukan dari lokasi ini.');
     }
 
+    const feature = payload.features[0];
+    const props = feature.properties;
+
     return {
-        formattedAddress: payload.formatted_address || payload.address || '',
-        address: payload.address || payload.formatted_address || '',
-        province: payload.province ?? '',
-        city: payload.city ?? '',
-        district: payload.district ?? '',
-        subdistrict: payload.subdistrict ?? payload.village ?? '',
-        village: payload.village ?? payload.subdistrict ?? '',
-        postalCode: payload.postal_code ?? '',
-        placeId: payload.place_id ?? null,
-        coverage: payload.coverage ?? null,
+        formattedAddress: props.formatted || '',
+        address: props.formatted || '',
+        province: props.state ?? '',
+        city: props.city ?? props.county ?? '',
+        district: props.district ?? props.suburb ?? '',
+        subdistrict: props.subdistrict ?? props.village ?? '',
+        village: props.village ?? props.subdistrict ?? '',
+        postalCode: props.postcode ?? '',
+        placeId: props.place_id ?? null,
+        coverage: null,
     };
 }

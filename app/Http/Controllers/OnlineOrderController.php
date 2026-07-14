@@ -228,7 +228,7 @@ class OnlineOrderController extends Controller
 
         [$cartSubtotal, $shippingCost, $total] = $this->cartTotals($cart);
 
-        $order = DB::transaction(function () use ($tenant, $cart, $validated, $cartSubtotal, $shippingCost, $total) {
+        $order = DB::transaction(function () use ($tenant, $cart, $validated, $cartSubtotal, $shippingCost, $total, $request) {
             $quantityByProduct = $cart
                 ->groupBy('product_id')
                 ->map(fn ($items) => $items->sum('quantity'));
@@ -247,6 +247,8 @@ class OnlineOrderController extends Controller
             $order = OnlineOrder::create([
                 'tenant_id' => $tenant->id,
                 'order_number' => $this->makeOrderNumber($tenant),
+                'customer_type' => $request->user() ? 'member' : 'guest',
+                'user_id' => $request->user()?->id,
                 'customer_name' => $validated['customer_name'],
                 'wa_number' => $validated['wa_number'],
                 'address' => $validated['address'],
@@ -328,6 +330,37 @@ class OnlineOrderController extends Controller
         ]);
     }
 
+    public function deliveryCoverage(Tenant $tenant, Request $request): JsonResponse
+    {
+        abort_unless($tenant->isActive(), 404);
+
+        $validated = $request->validate([
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
+        ]);
+
+        $cart = $this->loadCart($tenant);
+        [, $shippingCost, $total] = $this->cartTotals($cart);
+        $coverage = $this->deliveryCoverageService->evaluate(
+            (float) $validated['latitude'],
+            (float) $validated['longitude'],
+            $this->deliveryCoverageService->settingsForTenant($tenant->id),
+            $shippingCost,
+        );
+
+        return response()->json([
+            'available' => (bool) $coverage['within_coverage'],
+            'within_coverage' => (bool) $coverage['within_coverage'],
+            'active' => (bool) $coverage['active'],
+            'distance' => $coverage['distance_km'],
+            'distance_km' => $coverage['distance_km'],
+            'max_radius_km' => $coverage['max_radius_km'],
+            'delivery_fee' => $coverage['delivery_fee'],
+            'total' => $coverage['within_coverage'] ? $total : null,
+            'message' => $coverage['message'],
+        ]);
+    }
+
     public function geocodeSearch(Tenant $tenant, Request $request, ReverseGeocodingService $reverseGeocodingService): JsonResponse
     {
         abort_unless($tenant->isActive(), 404);
@@ -349,7 +382,22 @@ class OnlineOrderController extends Controller
         ]);
     }
 
-    public function review(Tenant $tenant): View
+    public function addressConfirmation(Tenant $tenant, Request $request): View|RedirectResponse
+    {
+        abort_unless($tenant->isActive(), 404);
+
+        [$cart, $cartSubtotal, $shippingCost, $total] = $this->cartSummary($tenant);
+        $deliveryCoverage = $this->deliveryCoverageService->settingsForTenant($tenant->id);
+
+        return view('online-orders.address', compact(
+            'tenant',
+            'cart',
+            'cartSubtotal',
+            'deliveryCoverage',
+        ));
+    }
+
+    public function review(Tenant $tenant, Request $request): View|RedirectResponse
     {
         abort_unless($tenant->isActive(), 404);
 
@@ -368,6 +416,14 @@ class OnlineOrderController extends Controller
             'onlinePaymentMethods',
             'deliveryCoverage',
         ));
+    }
+
+    private function redirectGuestToCustomerAuth(Tenant $tenant, string $intendedUrl): RedirectResponse
+    {
+        return redirect()->route('online-orders.auth', [
+            'tenant' => $tenant,
+            'redirect' => $intendedUrl,
+        ]);
     }
 
     public function success(Tenant $tenant, OnlineOrder $order): View
@@ -392,6 +448,11 @@ class OnlineOrderController extends Controller
 
         $waNumber = preg_replace('/\D+/', '', $request->string('wa_number')->toString());
         $orders = collect();
+
+        // If user is logged in, use their phone number automatically
+        if (auth()->check() && auth()->user()->phone) {
+            $waNumber = preg_replace('/\D+/', '', auth()->user()->phone);
+        }
 
         if ($waNumber !== '') {
             $orders = OnlineOrder::query()

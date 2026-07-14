@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'tenant_id',
     'order_number',
+    'customer_type',
+    'user_id',
     'customer_name',
     'wa_number',
     'address',
@@ -198,6 +200,11 @@ class OnlineOrder extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function items(): HasMany

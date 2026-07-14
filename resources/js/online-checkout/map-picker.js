@@ -1,15 +1,9 @@
-/**
- * Fullscreen OpenStreetMap location picker (Leaflet) with Nominatim search.
- */
-
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { createPlaceSearch } from './place-search';
+import { loadGoogleMaps } from './google-maps-loader';
 
 const DEFAULT_CENTER = { latitude: -7.7956, longitude: 110.3695 };
 
 export function createMapPicker({
-    geocodeSearchUrl,
+    googleMapsApiKey,
     modal,
     mapContainer,
     searchInput,
@@ -22,11 +16,62 @@ export function createMapPicker({
     onClose = null,
     initialPosition = null,
 }) {
+    let maps = null;
     let map = null;
-    let placeSearch = null;
+    let marker = null;
+    let geocoder = null;
+    let autocomplete = null;
     let currentPlaceId = null;
+    let currentFormattedAddress = null;
     let isOpen = false;
-    let debounceTimer = null;
+    let isConfirming = false;
+    let resolveMoveTimer = null;
+
+    function setSearchMessage(message, tone = 'muted') {
+        if (!searchResultsContainer) {
+            return;
+        }
+
+        searchResultsContainer.innerHTML = `<p class="map-search-empty ${tone === 'error' ? 'text-[#93000a]' : ''}">${message}</p>`;
+        searchResultsContainer.classList.remove('hidden');
+    }
+
+    function clearSearchMessage() {
+        if (!searchResultsContainer) {
+            return;
+        }
+
+        searchResultsContainer.innerHTML = '';
+        searchResultsContainer.classList.add('hidden');
+    }
+
+    function setModalActionsDisabled(disabled) {
+        closeButtons.forEach((button) => {
+            if (!button) return;
+            button.disabled = disabled;
+            button.classList.toggle('opacity-50', disabled);
+            button.classList.toggle('pointer-events-none', disabled);
+        });
+    }
+
+    function setConfirmLoading(isLoading) {
+        if (!confirmButton) return;
+
+        isConfirming = isLoading;
+        confirmButton.disabled = isLoading;
+        confirmButton.dataset.loading = isLoading ? '1' : '0';
+        confirmButton.classList.toggle('opacity-80', isLoading);
+        confirmButton.classList.toggle('pointer-events-none', isLoading);
+
+        const label = confirmButton.querySelector('[data-map-confirm-label]');
+        const loading = confirmButton.querySelector('[data-map-confirm-loading]');
+
+        label?.classList.toggle('hidden', isLoading);
+        loading?.classList.toggle('hidden', !isLoading);
+        loading?.classList.toggle('flex', isLoading);
+
+        setModalActionsDisabled(isLoading);
+    }
 
     function getCenterCoordinates() {
         if (!map) {
@@ -36,10 +81,19 @@ export function createMapPicker({
         const center = map.getCenter();
 
         return {
-            latitude: center.lat,
-            longitude: center.lng,
+            latitude: center.lat(),
+            longitude: center.lng(),
             placeId: currentPlaceId,
+            formattedAddress: currentFormattedAddress,
         };
+    }
+
+    function moveTo(latitude, longitude, zoom = 17) {
+        const position = { lat: Number(latitude), lng: Number(longitude) };
+
+        map.setCenter(position);
+        map.setZoom(zoom);
+        marker.setPosition(position);
     }
 
     function previewCoordinates(extra = {}) {
@@ -55,99 +109,161 @@ export function createMapPicker({
         });
     }
 
-    function emitLocationChange(extra = {}) {
+    function reverseCurrentCenter() {
         const coordinates = getCenterCoordinates();
 
-        if (!coordinates || !isOpen) {
+        if (!coordinates || !geocoder || !isOpen) {
             return;
         }
 
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-            onLocationChange?.({
-                ...coordinates,
-                ...extra,
+        clearTimeout(resolveMoveTimer);
+        resolveMoveTimer = setTimeout(() => {
+            const location = {
+                lat: Number(coordinates.latitude),
+                lng: Number(coordinates.longitude),
+            };
+
+            geocoder.geocode({ location }, (results, status) => {
+                if (status !== 'OK' || !results?.length || !isOpen) {
+                    currentPlaceId = null;
+                    currentFormattedAddress = null;
+                    onLocationChange?.({
+                        ...coordinates,
+                    });
+                    return;
+                }
+
+                const result = results[0];
+                currentPlaceId = result.place_id ?? null;
+                currentFormattedAddress = result.formatted_address ?? null;
+
+                onLocationChange?.({
+                    latitude: coordinates.latitude,
+                    longitude: coordinates.longitude,
+                    placeId: currentPlaceId,
+                    formattedAddress: currentFormattedAddress,
+                });
             });
-        }, 450);
+        }, 350);
     }
 
-    function ensureMapReady() {
+    async function ensureMapReady() {
         if (map) {
             return map;
         }
 
+        maps = await loadGoogleMaps(googleMapsApiKey);
+        geocoder = new maps.Geocoder();
+
         const defaultCenter = initialPosition
-            ? [Number(initialPosition.latitude), Number(initialPosition.longitude)]
-            : [DEFAULT_CENTER.latitude, DEFAULT_CENTER.longitude];
+            ? { lat: Number(initialPosition.latitude), lng: Number(initialPosition.longitude) }
+            : { lat: DEFAULT_CENTER.latitude, lng: DEFAULT_CENTER.longitude };
 
-        map = L.map(mapContainer, {
-            zoomControl: true,
-            attributionControl: true,
+        map = new maps.Map(mapContainer, {
+            center: defaultCenter,
+            zoom: initialPosition ? 17 : 12,
+            mapTypeControl: false,
+            fullscreenControl: false,
+            streetViewControl: false,
+            clickableIcons: false,
         });
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-            maxZoom: 19,
-        }).addTo(map);
+        marker = new maps.Marker({
+            map,
+            position: defaultCenter,
+        });
 
-        map.setView(defaultCenter, initialPosition ? 17 : 12);
-
-        map.on('movestart', () => {
+        map.addListener('click', (event) => {
             currentPlaceId = null;
-        });
-
-        map.on('moveend', () => {
+            currentFormattedAddress = null;
+            moveTo(event.latLng.lat(), event.latLng.lng(), Math.max(map.getZoom(), 16));
             previewCoordinates();
-            emitLocationChange();
+            reverseCurrentCenter();
         });
 
-        if (searchInput && searchResultsContainer && geocodeSearchUrl) {
-            placeSearch = createPlaceSearch({
-                searchInput,
-                resultsContainer: searchResultsContainer,
-                searchUrl: geocodeSearchUrl,
-                onSelect: (result) => {
-                    currentPlaceId = result.place_id ?? null;
-                    map.setView([result.latitude, result.longitude], 17);
+        map.addListener('dragstart', () => {
+            currentPlaceId = null;
+            currentFormattedAddress = null;
+        });
 
-                    previewCoordinates({
-                        latitude: result.latitude,
-                        longitude: result.longitude,
-                        placeId: currentPlaceId,
-                    });
+        map.addListener('center_changed', () => {
+            marker.setPosition(map.getCenter());
+        });
 
-                    onLocationChange?.({
-                        latitude: result.latitude,
-                        longitude: result.longitude,
-                        placeId: currentPlaceId,
-                        formattedAddress: result.formatted_address,
-                    });
-                },
+        map.addListener('idle', () => {
+            previewCoordinates();
+            reverseCurrentCenter();
+        });
+
+        if (searchInput) {
+            autocomplete = new maps.places.Autocomplete(searchInput, {
+                fields: ['formatted_address', 'geometry', 'place_id', 'name'],
+                componentRestrictions: { country: 'id' },
+            });
+
+            autocomplete.addListener('place_changed', () => {
+                const place = autocomplete.getPlace();
+
+                if (!place.geometry?.location) {
+                    setSearchMessage('Alamat tidak ditemukan. Coba kata kunci lain.', 'error');
+                    return;
+                }
+
+                clearSearchMessage();
+                currentPlaceId = place.place_id ?? null;
+                currentFormattedAddress = place.formatted_address || place.name || null;
+
+                moveTo(place.geometry.location.lat(), place.geometry.location.lng(), 17);
+                previewCoordinates({
+                    placeId: currentPlaceId,
+                    formattedAddress: currentFormattedAddress,
+                });
+                onLocationChange?.({
+                    latitude: place.geometry.location.lat(),
+                    longitude: place.geometry.location.lng(),
+                    placeId: currentPlaceId,
+                    formattedAddress: currentFormattedAddress,
+                });
             });
         }
 
         return map;
     }
 
-    function open(position = null) {
-        ensureMapReady();
-        isOpen = true;
+    async function open(position = null) {
         modal.classList.remove('hidden');
         document.body.classList.add('overflow-hidden');
+        isOpen = true;
+        setConfirmLoading(false);
+        setSearchMessage('Memuat Google Maps...');
         onOpen?.();
+
+        try {
+            await ensureMapReady();
+            clearSearchMessage();
+        } catch (error) {
+            setSearchMessage(error.message || 'Google Maps belum bisa dimuat.', 'error');
+            confirmButton?.setAttribute('disabled', 'disabled');
+            confirmButton?.classList.add('opacity-60', 'pointer-events-none');
+            return;
+        }
 
         const latitude = position ? Number(position.latitude) : DEFAULT_CENTER.latitude;
         const longitude = position ? Number(position.longitude) : DEFAULT_CENTER.longitude;
         const zoom = position ? 17 : 12;
 
         currentPlaceId = position?.placeId ?? null;
-        placeSearch?.clear();
+        currentFormattedAddress = position?.formattedAddress ?? null;
+
+        if (searchInput) {
+            searchInput.value = position?.formattedAddress ?? '';
+        }
 
         window.requestAnimationFrame(() => {
-            map.invalidateSize();
-            map.setView([latitude, longitude], zoom, { animate: false });
+            maps.event.trigger(map, 'resize');
+            moveTo(latitude, longitude, zoom);
             previewCoordinates();
-            emitLocationChange();
+            reverseCurrentCenter();
         });
     }
 
@@ -155,30 +271,46 @@ export function createMapPicker({
         isOpen = false;
         modal.classList.add('hidden');
         document.body.classList.remove('overflow-hidden');
-        placeSearch?.close();
+        clearSearchMessage();
+        setConfirmLoading(false);
         onClose?.();
     }
 
     closeButtons.forEach((button) => {
-        button?.addEventListener('click', close);
+        button?.addEventListener('click', () => {
+            if (!isConfirming) {
+                close();
+            }
+        });
     });
 
     confirmButton?.addEventListener('click', async () => {
+        if (isConfirming || confirmButton?.disabled) {
+            return;
+        }
+
         const coordinates = getCenterCoordinates();
 
-        if (coordinates) {
+        if (!coordinates) {
+            return;
+        }
+
+        setConfirmLoading(true);
+
+        try {
             await onLocationChange?.({
                 ...coordinates,
                 confirmed: true,
             });
+            close();
+        } catch {
+            setConfirmLoading(false);
         }
-
-        close();
     });
 
     return {
         open,
         close,
-        isApiAvailable: true,
+        isApiAvailable: Boolean(googleMapsApiKey),
     };
 }

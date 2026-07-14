@@ -158,6 +158,74 @@
         color: #767681;
     }
 
+    /* Geoapify Autocomplete Custom Styles */
+    .geoapify-autocomplete-input {
+        width: 100% !important;
+        height: 3rem !important;
+        border-radius: 1rem !important;
+        border: 1px solid #c6c5d2 !important;
+        background: #fff !important;
+        padding: 0 1rem !important;
+        font-size: 1rem !important;
+        box-shadow: 0 4px 12px rgba(0, 19, 86, 0.08) !important;
+    }
+
+    .geoapify-autocomplete-input:focus {
+        border-color: #001356 !important;
+        outline: none !important;
+        box-shadow: 0 0 0 3px rgba(0, 19, 86, 0.1) !important;
+    }
+
+    .geoapify-autocomplete-list {
+        position: absolute !important;
+        top: calc(100% + 0.5rem) !important;
+        left: 0 !important;
+        right: 0 !important;
+        max-height: 15rem !important;
+        overflow-y: auto !important;
+        border-radius: 1rem !important;
+        border: 1px solid #c6c5d2 !important;
+        background: #fff !important;
+        box-shadow: 0 12px 32px rgba(0, 19, 86, 0.12) !important;
+        z-index: 1000 !important;
+    }
+
+    .geoapify-autocomplete-item {
+        display: flex !important;
+        width: 100% !important;
+        align-items: flex-start !important;
+        gap: 0.75rem !important;
+        border: 0 !important;
+        border-bottom: 1px solid #eef3ff !important;
+        background: #fff !important;
+        padding: 0.875rem 1rem !important;
+        text-align: left !important;
+        transition: background-color 0.15s ease !important;
+        cursor: pointer !important;
+    }
+
+    .geoapify-autocomplete-item:last-child {
+        border-bottom: 0 !important;
+    }
+
+    .geoapify-autocomplete-item:hover,
+    .geoapify-autocomplete-item.active {
+        background: #f6faff !important;
+    }
+
+    .geoapify-autocomplete-icon {
+        flex-shrink: 0 !important;
+        font-size: 1.125rem !important;
+        color: #001356 !important;
+    }
+
+    .geoapify-autocomplete-address {
+        font-size: 0.8125rem !important;
+        font-weight: 600 !important;
+        line-height: 1.4 !important;
+        color: #171c20 !important;
+    }
+
     #map-picker-canvas {
         z-index: 1;
     }
@@ -205,6 +273,21 @@
         color: #ce2418;
         font-variation-settings: 'FILL' 1;
         filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    }
+
+    .btn-spinner {
+        width: 1.125rem;
+        height: 1.125rem;
+        border: 2px solid rgba(255, 255, 255, 0.35);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
     }
 }
 

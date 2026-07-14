@@ -8,11 +8,12 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['tenant_id', 'name', 'email', 'password', 'status'])]
+#[Fillable(['tenant_id', 'name', 'email', 'phone', 'password', 'status'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -37,9 +38,18 @@ class User extends Authenticatable
         return $this->belongsTo(Tenant::class);
     }
 
+    public function onlineOrders(): HasMany
+    {
+        return $this->hasMany(OnlineOrder::class, 'wa_number', 'phone');
+    }
+
     public function isActive(): bool
     {
         if ($this->hasRole('Super Admin')) {
+            return $this->status === 'active';
+        }
+
+        if ($this->hasRole('Customer')) {
             return $this->status === 'active';
         }
 

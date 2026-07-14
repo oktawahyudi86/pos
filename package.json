@@ -18,6 +18,7 @@
         "vite": "^8.0.0"
     },
     "dependencies": {
+        "@geoapify/geocoder-autocomplete": "^3.0.1",
         "leaflet": "^1.9.4"
     }
 }

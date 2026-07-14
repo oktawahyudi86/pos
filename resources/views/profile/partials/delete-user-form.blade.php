@@ -30,13 +30,18 @@
             <div class="mt-6">
                 <x-input-label for="password" value="{{ __('Password') }}" class="sr-only" />
 
-                <x-text-input
-                    id="password"
-                    name="password"
-                    type="password"
-                    class="mt-1 block w-3/4"
-                    placeholder="{{ __('Password') }}"
-                />
+                <div class="relative mt-1 w-3/4">
+                    <x-text-input
+                        id="password"
+                        name="password"
+                        type="password"
+                        class="block w-full pr-12"
+                        placeholder="{{ __('Password') }}"
+                    />
+                    <button type="button" onclick="togglePassword('password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 transition hover:text-gray-700">
+                        <span class="material-symbols-outlined text-[20px]">visibility</span>
+                    </button>
+                </div>
 
                 <x-input-error :messages="$errors->userDeletion->get('password')" class="mt-2" />
             </div>
@@ -52,4 +57,19 @@
             </div>
         </form>
     </x-modal>
+
+    <script>
+        function togglePassword(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('.material-symbols-outlined');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.textContent = 'visibility_off';
+            } else {
+                input.type = 'password';
+                icon.textContent = 'visibility';
+            }
+        }
+    </script>
 </section>

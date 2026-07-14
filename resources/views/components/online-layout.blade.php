@@ -30,6 +30,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         .material-symbols-outlined {
@@ -84,7 +85,8 @@
             </div>
         </div>
         <div class="fixed inset-x-0 bottom-0 border-t border-[#d7dde8] bg-white px-2 py-1 sm:px-4">
-            <div class="mx-auto grid w-full max-w-5xl grid-cols-3 gap-2">
+            <div class="mx-auto grid w-full max-w-5xl grid-cols-4 gap-2">
+                <div class="skeleton-shimmer h-16 rounded-xl"></div>
                 <div class="skeleton-shimmer h-16 rounded-xl"></div>
                 <div class="skeleton-shimmer h-16 rounded-xl"></div>
                 <div class="skeleton-shimmer h-16 rounded-xl"></div>
@@ -105,18 +107,27 @@
                 </a>
             @endif
 
-            <div class="flex min-w-0 items-center gap-2">
-                @if ($receiptLogoUrl)
-                    <img src="{{ $receiptLogoUrl }}" alt="{{ $receipt['cafe_name'] ?? $tenant?->name }}" class="h-9 w-auto object-contain">
-                @else
-                    <img src="{{ asset('images/keijora-logo-cropped.png') }}" alt="Keijora" class="h-9 w-auto object-contain">
-                @endif
-                @if ($customerBrandText !== '')
-                    <span class="online-header-brand truncate text-sm font-extrabold leading-none text-[#001356] transition-colors duration-200">{{ $customerBrandText }}</span>
-                @endif
+            <div class="flex min-w-0 flex-1 items-center justify-center gap-3">
+                <div class="flex items-center gap-2">
+                    @if ($receiptLogoUrl)
+                        <img src="{{ $receiptLogoUrl }}" alt="{{ $receipt['cafe_name'] ?? $tenant?->name }}" class="h-8 w-auto object-contain">
+                    @else
+                        <img src="{{ asset('images/keijora-logo-cropped.png') }}" alt="Keijora" class="h-8 w-auto object-contain">
+                    @endif
+                    @if ($customerBrandText !== '')
+                        <span class="online-header-brand hidden truncate text-sm font-extrabold leading-none text-[#001356] transition-colors duration-200 sm:block">{{ $customerBrandText }}</span>
+                    @endif
+                </div>
+                <div class="flex items-center gap-1 rounded-full border border-[#c6c5d2] bg-white px-3 py-1.5">
+                    <span class="material-symbols-outlined text-[16px] text-[#001356]" style="font-variation-settings: 'FILL' 1;">location_on</span>
+                    <span id="header-location-text" class="max-w-[120px] truncate text-xs font-semibold text-[#454650] sm:max-w-[200px]">Mendeteksi lokasi...</span>
+                    <button id="header-change-location" type="button" class="ml-1 flex h-6 w-6 items-center justify-center rounded-full text-[#001356] transition active:scale-[0.95]" title="Ubah lokasi">
+                        <span class="material-symbols-outlined text-[18px]">edit</span>
+                    </button>
+                </div>
             </div>
 
-            <a href="{{ route('online-orders.checkout.form', $tenant) }}" class="online-header-foreground relative flex h-11 w-11 items-center justify-center rounded-full text-[#001356] transition-colors duration-200">
+            <a href="{{ route('online-orders.address', $tenant) }}" class="online-header-foreground relative flex h-11 w-11 items-center justify-center rounded-full text-[#001356] transition-colors duration-200">
                 <svg viewBox="0 0 24 24" class="h-8 w-8" aria-hidden="true">
                     <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12l-1 13H7L6 7zm3 0a3 3 0 0 1 6 0"></path>
                 </svg>
@@ -132,7 +143,7 @@
     </main>
 
     <nav class="fixed inset-x-0 bottom-0 z-50 border-t border-[#d7dde8] bg-white shadow-[0_-4px_12px_rgba(27,43,107,0.04)]">
-        <div class="mx-auto grid w-full max-w-5xl grid-cols-3 px-2 py-1 sm:px-4">
+        <div class="mx-auto grid w-full max-w-5xl grid-cols-4 px-2 py-1 sm:px-4">
             <a href="{{ route('online-orders.catalog', $tenant) }}" class="flex flex-col items-center justify-center rounded-xl py-2 {{ $active === 'menu' ? 'bg-[#001356] text-white' : 'text-[#454650]' }}">
                 <span class="material-symbols-outlined text-[26px]">restaurant_menu</span>
                 <span class="mt-1 text-[11px] font-bold">Menu</span>
@@ -141,9 +152,16 @@
                 <span class="material-symbols-outlined text-[26px]">receipt_long</span>
                 <span class="mt-1 text-[11px] font-bold">Orders</span>
             </a>
-            <a href="{{ route('online-orders.checkout.form', $tenant) }}" class="flex flex-col items-center justify-center rounded-xl py-2 {{ $active === 'cart' ? 'bg-[#001356] text-white' : 'text-[#454650]' }}">
+            <a href="{{ route('online-orders.address', $tenant) }}" class="flex flex-col items-center justify-center rounded-xl py-2 {{ $active === 'cart' ? 'bg-[#001356] text-white' : 'text-[#454650]' }}">
                 <span class="material-symbols-outlined text-[26px]">shopping_bag</span>
                 <span class="mt-1 text-[11px] font-bold">Cart</span>
+            </a>
+            <a href="{{ route('online-orders.profile', $tenant) }}" class="relative flex flex-col items-center justify-center rounded-xl py-2 {{ $active === 'profile' ? 'bg-[#001356] text-white' : 'text-[#454650]' }}">
+                <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' {{ auth()->check() ? '1' : '0' }};">account_circle</span>
+                <span class="mt-1 text-[11px] font-bold">Profil</span>
+                @auth
+                    <span class="absolute right-2 top-2 h-2.5 w-2.5 rounded-full border border-white bg-[#24d18f]"></span>
+                @endauth
             </a>
         </div>
     </nav>
@@ -158,6 +176,12 @@
 
         window.addEventListener('scroll', syncOnlineHeaderState, { passive: true });
         syncOnlineHeaderState();
+    </script>
+    <script>
+        window.onlineHeaderConfig = {
+            geoapifyApiKey: '{{ config('services.geoapify.key') }}',
+            tenant: @json($tenant)
+        };
     </script>
     </div>
 </body>

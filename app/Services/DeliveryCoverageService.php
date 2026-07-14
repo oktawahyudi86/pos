@@ -6,7 +6,7 @@ use App\Models\Setting;
 
 class DeliveryCoverageService
 {
-    public const OUT_OF_COVERAGE_MESSAGE = 'Batas wilayah Anda belum tercover. Tunggu ekspansi kami ke wilayah Anda.';
+    public const OUT_OF_COVERAGE_MESSAGE = 'Maaf, alamat ini berada di luar area pengiriman.';
 
     public function settingsForTenant(int $tenantId): array
     {
@@ -46,10 +46,11 @@ class DeliveryCoverageService
      *     within_coverage: bool,
      *     distance_km: float|null,
      *     max_radius_km: float|null,
+     *     delivery_fee: int|null,
      *     message: string|null
      * }
      */
-    public function evaluate(?float $deliveryLat, ?float $deliveryLng, array $settings): array
+    public function evaluate(?float $deliveryLat, ?float $deliveryLng, array $settings, ?int $deliveryFee = null): array
     {
         if (! $this->isRestrictionActive($settings)) {
             return [
@@ -57,6 +58,7 @@ class DeliveryCoverageService
                 'within_coverage' => true,
                 'distance_km' => null,
                 'max_radius_km' => null,
+                'delivery_fee' => $deliveryFee,
                 'message' => null,
             ];
         }
@@ -71,7 +73,8 @@ class DeliveryCoverageService
                 'within_coverage' => false,
                 'distance_km' => null,
                 'max_radius_km' => $maxRadius,
-                'message' => 'Aktifkan lokasi HP untuk memastikan alamat pengantaran berada dalam jangkauan kami.',
+                'delivery_fee' => $deliveryFee,
+                'message' => 'Silakan pilih alamat pengiriman.',
             ];
         }
 
@@ -83,6 +86,7 @@ class DeliveryCoverageService
             'within_coverage' => $within,
             'distance_km' => round($distance, 2),
             'max_radius_km' => $maxRadius,
+            'delivery_fee' => $within ? $deliveryFee : null,
             'message' => $within ? null : self::OUT_OF_COVERAGE_MESSAGE,
         ];
     }

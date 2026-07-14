@@ -10,6 +10,8 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VariantGroupController;
 use App\Http\Controllers\CashierController;
 use App\Http\Controllers\CashierOrderController;
+use App\Http\Controllers\CustomerAuthController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\OnlineOrderController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
 use App\Http\Controllers\SuperAdmin\TenantController as SuperAdminTenantController;
@@ -91,6 +93,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/transaksi/{transaction}/receipt', [TransactionController::class, 'receipt'])->name('transactions.receipt');
 });
 
+Route::middleware(['auth'])->group(function () {
+    Route::get('/pelanggan', [CustomerController::class, 'index'])->name('customers.index');
+    Route::post('/pelanggan/{customer}/deactivate', [CustomerController::class, 'deactivate'])->name('customers.deactivate');
+    Route::post('/pelanggan/{customer}/activate', [CustomerController::class, 'activate'])->name('customers.activate');
+    Route::post('/pelanggan/{customer}/reset-password', [CustomerController::class, 'sendPasswordReset'])->name('customers.reset-password');
+});
+
 Route::get('/r/{code}', [TransactionController::class, 'publicReceiptByCode'])->name('transactions.receipt.short');
 
 Route::middleware('auth')->group(function () {
@@ -103,12 +112,20 @@ require __DIR__.'/auth.php';
 
 Route::prefix('{tenant:slug}')->name('online-orders.')->group(function () {
     Route::get('/', [OnlineOrderController::class, 'index'])->name('catalog');
+    Route::get('/profil', [CustomerAuthController::class, 'profile'])->name('profile');
+    Route::get('/auth', [CustomerAuthController::class, 'show'])->name('auth');
+    Route::get('/auth/register', [CustomerAuthController::class, 'show'])->middleware('guest')->name('auth.register')->defaults('tab', 'register');
+    Route::post('/auth/login', [CustomerAuthController::class, 'login'])->middleware('guest')->name('auth.login');
+    Route::post('/auth/register', [CustomerAuthController::class, 'register'])->middleware('guest')->name('auth.register.store');
+    Route::post('/auth/logout', [CustomerAuthController::class, 'logout'])->middleware('auth')->name('auth.logout');
     Route::get('/produk/{product}', [OnlineOrderController::class, 'productDetail'])->name('product.detail');
     Route::post('/cart', [OnlineOrderController::class, 'storeCart'])->name('cart.store');
     Route::patch('/cart/{key}', [OnlineOrderController::class, 'updateCart'])->name('cart.update');
     Route::delete('/cart/{key}', [OnlineOrderController::class, 'destroyCart'])->name('cart.destroy');
+    Route::get('/address', [OnlineOrderController::class, 'addressConfirmation'])->name('address');
     Route::get('/checkout', [OnlineOrderController::class, 'review'])->name('checkout.form');
     Route::get('/reverse-geocode', [OnlineOrderController::class, 'reverseGeocode'])->name('reverse-geocode');
+    Route::get('/delivery-coverage', [OnlineOrderController::class, 'deliveryCoverage'])->name('delivery-coverage');
     Route::get('/geocode-search', [OnlineOrderController::class, 'geocodeSearch'])->name('geocode-search');
     Route::post('/checkout', [OnlineOrderController::class, 'checkout'])->name('checkout');
     Route::get('/pesanan/{order}', [OnlineOrderController::class, 'success'])->name('success');

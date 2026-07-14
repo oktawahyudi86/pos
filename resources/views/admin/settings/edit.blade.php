@@ -3,6 +3,8 @@
         ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('dashboard'), 'active' => false],
         ['label' => 'Produk', 'icon' => 'inventory_2', 'href' => route('admin.products.index'), 'active' => false],
         ['label' => 'Transaksi', 'icon' => 'receipt_long', 'href' => route('transactions.index'), 'active' => false],
+        ['label' => 'Pelanggan', 'icon' => 'people', 'href' => route('customers.index'), 'active' => false],
+        ['label' => 'Pengguna', 'icon' => 'group', 'href' => route('admin.users.index'), 'active' => false],
         ['label' => 'Pengaturan', 'icon' => 'settings', 'href' => route('admin.settings.edit'), 'active' => true],
     ];
 @endphp

@@ -16,7 +16,7 @@
         <div class="hidden grid-cols-[1fr_1fr_1fr_100px_150px_200px] gap-4 border-b border-[#dfe3e9] bg-[#f6faff] px-5 py-3 text-xs font-bold uppercase tracking-widest text-[#767681] xl:grid">
             <div>Nama</div>
             <div>No. HP</div>
-            <div>Email</div>
+            <div>ID Pelanggan</div>
             <div>Order</div>
             <div>Status</div>
             <div class="text-right">Aksi</div>
@@ -28,14 +28,14 @@
                     <div class="min-w-0">
                         <p class="text-sm font-bold text-[#171c20]">{{ $customer->name }}</p>
                         <p class="text-xs text-[#767681] xl:hidden">No. HP: {{ $customer->phone }}</p>
-                        <p class="text-xs text-[#767681] xl:hidden">Email: {{ $customer->email }}</p>
+                        <p class="text-xs text-[#767681] xl:hidden">ID: #{{ $customer->id }}</p>
                         <p class="text-xs text-[#767681] xl:hidden">Order: {{ $customer->online_orders_count }}</p>
                     </div>
                     <div class="hidden xl:block">
                         <p class="text-sm font-semibold text-[#171c20]">{{ $customer->phone }}</p>
                     </div>
                     <div class="hidden xl:block">
-                        <p class="text-sm font-semibold text-[#171c20]">{{ $customer->email }}</p>
+                        <p class="text-sm font-semibold text-[#171c20]">#{{ $customer->id }}</p>
                     </div>
                     <div class="hidden xl:block">
                         <p class="text-sm font-bold text-[#001356]">{{ $customer->online_orders_count }}</p>

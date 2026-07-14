@@ -15,6 +15,7 @@ export function createLeafletMapPicker({
     onOpen = null,
     onClose = null,
     initialPosition = null,
+    clearButton = null,
 }) {
     let map = null;
     let marker = null;
@@ -302,7 +303,15 @@ export function createLeafletMapPicker({
         if (searchInput) {
             let searchDebounce = null;
 
+            // Update clear button visibility
+            const updateClearButton = () => {
+                if (clearButton) {
+                    clearButton.classList.toggle('hidden', !searchInput.value.trim());
+                }
+            };
+
             searchInput.addEventListener('input', (e) => {
+                updateClearButton();
                 clearTimeout(searchDebounce);
                 searchDebounce = setTimeout(() => {
                     searchAddress(e.target.value.trim());
@@ -314,6 +323,16 @@ export function createLeafletMapPicker({
                     clearSearchMessage();
                 }
             });
+
+            // Clear button click handler
+            if (clearButton) {
+                clearButton.addEventListener('click', () => {
+                    searchInput.value = '';
+                    clearSearchMessage();
+                    updateClearButton();
+                    searchInput.focus();
+                });
+            }
         }
 
         // Close search results when clicking outside
@@ -355,6 +374,10 @@ export function createLeafletMapPicker({
 
         if (searchInput) {
             searchInput.value = position?.formattedAddress ?? '';
+            // Update clear button visibility
+            if (clearButton) {
+                clearButton.classList.toggle('hidden', !searchInput.value.trim());
+            }
         }
 
         // Wait for modal to be visible before invalidating map size

@@ -17,30 +17,42 @@ export function initHeaderLocation(geoapifyApiKey, tenant) {
 
 function initializeLocationDetection(geoapifyApiKey, tenant) {
     const locationText = document.getElementById('header-location-text');
-    const changeLocationBtn = document.getElementById('header-change-location');
 
-    console.log('Elements found:', { locationText, changeLocationBtn });
+    console.log('Elements found:', { locationText });
 
-    if (!locationText || !changeLocationBtn) {
-        console.warn('Header location elements not found');
+    if (!locationText) {
+        console.warn('Header location text element not found');
         return;
     }
 
     // Auto-detect location on page load
     detectLocation();
 
-    // Handle change location button click
-    changeLocationBtn.addEventListener('click', () => {
-        // Navigate to checkout page where user can change location
-        window.location.href = `/online-orders/${tenant.id}/checkout`;
-    });
-
     async function detectLocation() {
         console.log('Starting location detection...');
 
+        // First, try to load from localStorage
+        const storedLocation = localStorage.getItem(`delivery_location_${tenant.id}`);
+        if (storedLocation) {
+            try {
+                const locationData = JSON.parse(storedLocation);
+                const detectedTime = new Date(locationData.detectedAt);
+                const now = new Date();
+                const ageMinutes = (now - detectedTime) / (1000 * 60);
+
+                if (ageMinutes < 30 && locationData.city) {
+                    locationText.textContent = locationData.city;
+                    console.log('Using stored location from localStorage:', locationData.city);
+                    return;
+                }
+            } catch (e) {
+                console.error('Failed to parse stored location:', e);
+            }
+        }
+
         if (!navigator.geolocation) {
             console.warn('Geolocation not supported');
-            locationText.textContent = 'Lokasi tidak tersedia';
+            locationText.textContent = 'Pilih lokasi';
             return;
         }
 
@@ -98,7 +110,13 @@ function initializeLocationDetection(geoapifyApiKey, tenant) {
             }
         } catch (error) {
             console.error('Location detection failed:', error);
-            locationText.textContent = 'Lokasi tidak diketahui';
+            // Show user-friendly message when geolocation is blocked
+            if (error.code === 1) { // PERMISSION_DENIED
+                locationText.textContent = 'Pilih lokasi';
+                console.log('Geolocation permission denied, showing default text');
+            } else {
+                locationText.textContent = 'Lokasi tidak diketahui';
+            }
         }
     }
 }

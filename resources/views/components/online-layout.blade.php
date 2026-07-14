@@ -94,49 +94,45 @@
         </div>
     </div>
 
-    <div class="customer-page-content">
     <header id="online-page-header" class="fixed inset-x-0 top-0 z-50 border-b border-[#d7dde8] bg-white/98 shadow-[0_4px_12px_rgba(27,43,107,0.04)] backdrop-blur transition-all duration-200">
         <div class="mx-auto flex h-20 w-full max-w-5xl items-center justify-between px-4 sm:px-6">
-            @if ($backUrl)
-                <a href="{{ $backUrl }}" class="online-header-foreground flex h-11 w-11 items-center justify-center rounded-full text-[#001356] transition-colors duration-200 active:scale-[0.98]" aria-label="{{ $backLabel }}">
-                    <span class="material-symbols-outlined text-[30px]">arrow_back</span>
-                </a>
-            @else
-                <a href="{{ route('online-orders.catalog', $tenant) }}" class="online-header-foreground flex h-11 w-11 items-center justify-center rounded-full text-[#001356] transition-colors duration-200">
-                    <span class="material-symbols-outlined text-[30px]">restaurant_menu</span>
-                </a>
-            @endif
-
-            <div class="flex min-w-0 flex-1 items-center justify-center gap-3">
-                <div class="flex items-center gap-2">
-                    @if ($receiptLogoUrl)
-                        <img src="{{ $receiptLogoUrl }}" alt="{{ $receipt['cafe_name'] ?? $tenant?->name }}" class="h-8 w-auto object-contain">
-                    @else
-                        <img src="{{ asset('images/keijora-logo-cropped.png') }}" alt="Keijora" class="h-8 w-auto object-contain">
-                    @endif
-                    @if ($customerBrandText !== '')
-                        <span class="online-header-brand hidden truncate text-sm font-extrabold leading-none text-[#001356] transition-colors duration-200 sm:block">{{ $customerBrandText }}</span>
-                    @endif
-                </div>
-                <div class="flex items-center gap-1 rounded-full border border-[#c6c5d2] bg-white px-3 py-1.5">
-                    <span class="material-symbols-outlined text-[16px] text-[#001356]" style="font-variation-settings: 'FILL' 1;">location_on</span>
-                    <span id="header-location-text" class="max-w-[120px] truncate text-xs font-semibold text-[#454650] sm:max-w-[200px]">Mendeteksi lokasi...</span>
-                    <button id="header-change-location" type="button" class="ml-1 flex h-6 w-6 items-center justify-center rounded-full text-[#001356] transition active:scale-[0.95]" title="Ubah lokasi">
-                        <span class="material-symbols-outlined text-[18px]">edit</span>
-                    </button>
-                </div>
+            <!-- Left: Logo + Brand -->
+            <div class="flex items-center gap-2">
+                @if ($backUrl)
+                    <a href="{{ $backUrl }}" class="online-header-foreground flex h-9 w-9 items-center justify-center rounded-full text-[#001356] transition-colors duration-200 active:scale-[0.98] mr-2" aria-label="{{ $backLabel }}">
+                        <span class="material-symbols-outlined text-[24px]">arrow_back</span>
+                    </a>
+                @endif
+                @if ($receiptLogoUrl)
+                    <img src="{{ $receiptLogoUrl }}" alt="{{ $receipt['cafe_name'] ?? $tenant?->name }}" class="h-7 w-auto object-contain sm:h-8">
+                @else
+                    <img src="{{ asset('images/keijora-logo-cropped.png') }}" alt="Keijora" class="h-7 w-auto object-contain sm:h-8">
+                @endif
+                @if ($customerBrandText !== '')
+                    <span class="online-header-brand truncate text-xs font-extrabold leading-none text-[#001356] transition-colors duration-200 sm:text-sm">{{ $customerBrandText }}</span>
+                @endif
             </div>
 
-            <a href="{{ route('online-orders.address', $tenant) }}" class="online-header-foreground relative flex h-11 w-11 items-center justify-center rounded-full text-[#001356] transition-colors duration-200">
-                <svg viewBox="0 0 24 24" class="h-8 w-8" aria-hidden="true">
+            <!-- Center: Location -->
+            <a href="{{ route('online-orders.location', $tenant) }}" class="flex items-center gap-1 rounded-full border border-[#c6c5d2] bg-white px-2 py-1.5 transition active:scale-[0.98] hover:border-[#001356] sm:px-3">
+                <span class="material-symbols-outlined text-[16px] text-[#001356]" style="font-variation-settings: 'FILL' 1;">location_on</span>
+                <span id="header-location-text" class="max-w-[80px] truncate text-xs font-semibold text-[#454650] sm:max-w-[150px]">Mendeteksi lokasi...</span>
+                <span class="material-symbols-outlined text-[18px] text-[#001356]">edit</span>
+            </a>
+
+            <!-- Right: Cart -->
+            <a href="{{ route('online-orders.address', $tenant) }}" class="online-header-foreground relative flex h-10 w-10 items-center justify-center rounded-full text-[#001356] transition-colors duration-200 sm:h-11 sm:w-11">
+                <svg viewBox="0 0 24 24" class="h-7 w-7 sm:h-8 sm:w-8" aria-hidden="true">
                     <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12l-1 13H7L6 7zm3 0a3 3 0 0 1 6 0"></path>
                 </svg>
                 @if ($cartCount > 0)
-                    <span class="absolute right-0 top-0 flex h-6 min-w-6 items-center justify-center rounded-full bg-[#ce2418] px-1 text-[12px] font-bold leading-none text-white">{{ $cartCount > 9 ? '9+' : $cartCount }}</span>
+                    <span class="absolute right-0 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ce2418] px-0.5 text-[11px] font-bold leading-none text-white sm:h-6 sm:min-w-6 sm:px-1 sm:text-[12px]">{{ $cartCount > 9 ? '9+' : $cartCount }}</span>
                 @endif
             </a>
         </div>
     </header>
+
+    <div class="customer-page-content">
 
     <main class="mx-auto min-h-screen w-full max-w-5xl px-4 pb-32 pt-24 sm:px-6">
         {{ $slot }}

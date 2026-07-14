@@ -123,6 +123,7 @@ Route::prefix('{tenant:slug}')->name('online-orders.')->group(function () {
     Route::post('/cart', [OnlineOrderController::class, 'storeCart'])->name('cart.store');
     Route::patch('/cart/{key}', [OnlineOrderController::class, 'updateCart'])->name('cart.update');
     Route::delete('/cart/{key}', [OnlineOrderController::class, 'destroyCart'])->name('cart.destroy');
+    Route::get('/lokasi', [OnlineOrderController::class, 'locationSelector'])->name('location');
     Route::get('/address', [OnlineOrderController::class, 'addressConfirmation'])->name('address');
     Route::get('/checkout', [OnlineOrderController::class, 'review'])->name('checkout.form');
     Route::get('/reverse-geocode', [OnlineOrderController::class, 'reverseGeocode'])->name('reverse-geocode');

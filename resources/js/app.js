@@ -3,10 +3,12 @@
 import Alpine from 'alpinejs';
 import { initHeaderLocation } from './online-header-location';
 import { initAddressConfirmation } from './online-address-confirmation';
+import { initLocationSelector } from './online-location-selector';
 
 window.Alpine = Alpine;
 window.initHeaderLocation = initHeaderLocation;
 window.initAddressConfirmation = initAddressConfirmation;
+window.initLocationSelector = initLocationSelector;
 
 Alpine.start();
 

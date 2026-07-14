@@ -382,6 +382,18 @@ class OnlineOrderController extends Controller
         ]);
     }
 
+    public function locationSelector(Tenant $tenant, Request $request): View
+    {
+        abort_unless($tenant->isActive(), 404);
+
+        $deliveryCoverage = $this->deliveryCoverageService->settingsForTenant($tenant->id);
+
+        return view('online-orders.location', compact(
+            'tenant',
+            'deliveryCoverage',
+        ));
+    }
+
     public function addressConfirmation(Tenant $tenant, Request $request): View|RedirectResponse
     {
         abort_unless($tenant->isActive(), 404);

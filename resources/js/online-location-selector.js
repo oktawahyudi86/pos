@@ -1,12 +1,12 @@
 /**
- * Address confirmation page logic
- * Similar to delivery-location.js but for address confirmation before checkout
+ * Location selector page logic
+ * Similar to address-confirmation.js but for selecting location from navbar
  */
 
 import { createLeafletMapPicker } from './online-checkout/leaflet-map-picker';
 import { createMapThumbnail } from './online-checkout/map-thumbnail';
 
-export function initAddressConfirmation(tenant, config) {
+export function initLocationSelector(tenant, config) {
     const elements = {
         initialState: document.getElementById('location-initial-state'),
         selectedState: document.getElementById('location-selected-state'),
@@ -28,7 +28,7 @@ export function initAddressConfirmation(tenant, config) {
         useLocationButton: document.getElementById('use-my-location-button'),
         useCurrentLocationButton: document.getElementById('use-current-location-button'),
         changeOnMapButton: document.getElementById('change-on-map-button'),
-        confirmAddressButton: document.getElementById('confirm-address-button'),
+        confirmLocationButton: document.getElementById('confirm-location-button'),
         coverageBanner: document.getElementById('coverage-banner'),
         coverageSuccess: document.getElementById('coverage-success'),
         coverageLoading: document.getElementById('coverage-loading'),
@@ -52,7 +52,7 @@ export function initAddressConfirmation(tenant, config) {
         geoapifyApiKey,
         deliveryCoverageConfig,
         outOfCoverageMessage,
-        checkoutUrl,
+        catalogUrl,
         oldValues,
     } = config;
 
@@ -249,9 +249,9 @@ export function initAddressConfirmation(tenant, config) {
         const hasCoords = elements.latitudeInput.value && elements.longitudeInput.value;
         const blocked = coverageState.active && !coverageState.within;
 
-        elements.confirmAddressButton?.toggleAttribute('disabled', !hasCoords || blocked);
-        elements.confirmAddressButton?.classList.toggle('opacity-60', !hasCoords || blocked);
-        elements.confirmAddressButton?.classList.toggle('pointer-events-none', !hasCoords || blocked);
+        elements.confirmLocationButton?.toggleAttribute('disabled', !hasCoords || blocked);
+        elements.confirmLocationButton?.classList.toggle('opacity-60', !hasCoords || blocked);
+        elements.confirmLocationButton?.classList.toggle('pointer-events-none', !hasCoords || blocked);
     }
 
     // Event listeners
@@ -260,9 +260,9 @@ export function initAddressConfirmation(tenant, config) {
     elements.useCurrentLocationButton?.addEventListener('click', detectMyLocation);
     elements.changeOnMapButton?.addEventListener('click', openMapPicker);
 
-    elements.confirmAddressButton?.addEventListener('click', () => {
-        // Store confirmed address in localStorage and redirect to checkout
-        const confirmedAddress = {
+    elements.confirmLocationButton?.addEventListener('click', () => {
+        // Store confirmed location in localStorage and redirect to catalog
+        const confirmedLocation = {
             latitude: elements.latitudeInput.value,
             longitude: elements.longitudeInput.value,
             placeId: elements.placeIdInput.value,
@@ -272,13 +272,14 @@ export function initAddressConfirmation(tenant, config) {
             district: elements.districtInput.value,
             subdistrict: elements.subdistrictInput.value,
             postalCode: elements.postalCodeInput.value,
+            detectedAt: new Date().toISOString(),
         };
 
-        localStorage.setItem(`confirmed_address_${tenant.id}`, JSON.stringify(confirmedAddress));
-        window.location.href = checkoutUrl;
+        localStorage.setItem(`delivery_location_${tenant.id}`, JSON.stringify(confirmedLocation));
+        window.location.href = catalogUrl;
     });
 
-    // Check for auto-detected location from navbar
+    // Check for existing location from localStorage
     const storedLocation = localStorage.getItem(`delivery_location_${tenant.id}`);
     if (storedLocation) {
         try {

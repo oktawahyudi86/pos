@@ -8,6 +8,8 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -74,5 +76,30 @@ class TenantController extends Controller
         $user->save();
 
         return back()->with('status', 'Data user berhasil diperbarui.');
+    }
+
+    public function sendUserPasswordReset(Request $request, Tenant $tenant, User $user): RedirectResponse
+    {
+        abort_unless((int) $user->tenant_id === (int) $tenant->id, 404);
+
+        // Generate password reset token
+        $token = Password::createToken($user);
+
+        // Store the reset information
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $user->email],
+            [
+                'token' => Hash::make($token),
+                'created_at' => now(),
+            ]
+        );
+
+        // Generate the reset link
+        $resetLink = route('password.reset', [
+            'token' => $token,
+            'email' => $user->email,
+        ]);
+
+        return back()->with('status', 'Link reset password berhasil dibuat: ' . $resetLink);
     }
 }

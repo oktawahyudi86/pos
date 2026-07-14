@@ -198,9 +198,19 @@ $navItems = [
             </header>
 
             @if (session('status') || session('error'))
-                <div class="mx-4 mt-4 rounded-xl border px-4 py-3 text-sm font-semibold lg:mx-6 {{ session('error') ? 'border-[#ffdad6] bg-[#fff4f2] text-[#93000a]' : 'border-[#b9c7df] bg-[#eef3ff] text-[#001356]' }}">
+                <div id="session-flash" class="mx-4 mt-4 rounded-xl border px-4 py-3 text-sm font-semibold lg:mx-6 {{ session('error') ? 'border-[#ffdad6] bg-[#fff4f2] text-[#93000a]' : 'border-[#b9c7df] bg-[#eef3ff] text-[#001356]' }}">
                     {{ session('status') ?? session('error') }}
                 </div>
+                <script>
+                    setTimeout(() => {
+                        const flash = document.getElementById('session-flash');
+                        if (flash) {
+                            flash.style.transition = 'opacity 0.3s ease';
+                            flash.style.opacity = '0';
+                            setTimeout(() => flash.remove(), 300);
+                        }
+                    }, 3000);
+                </script>
             @endif
 
             <div class="flex w-full max-w-full min-w-0 flex-1 flex-col gap-4 overflow-x-hidden p-4 pb-32 lg:min-h-0 lg:flex-row lg:overflow-hidden lg:p-6">

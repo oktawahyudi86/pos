@@ -55,6 +55,7 @@ Route::middleware(['auth', 'verified', 'role:Super Admin'])->prefix('super-admin
     Route::patch('/tenants/{tenant}/activate', [SuperAdminTenantController::class, 'activate'])->name('tenants.activate');
     Route::patch('/tenants/{tenant}/suspend', [SuperAdminTenantController::class, 'suspend'])->name('tenants.suspend');
     Route::patch('/tenants/{tenant}/users/{user}', [SuperAdminTenantController::class, 'updateUser'])->name('tenants.users.update');
+    Route::post('/tenants/{tenant}/users/{user}/reset-password', [SuperAdminTenantController::class, 'sendUserPasswordReset'])->name('tenants.users.reset-password');
 });
 
 Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('admin.')->group(function () {
